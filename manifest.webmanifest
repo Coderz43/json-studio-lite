@@ -1,0 +1,15 @@
+{
+  "name": "JSON Studio Lite — Text → JSON, CSV → JSON",
+  "short_name": "JSON Studio Lite",
+  "description": "Fast, private, in-browser converters: Text → JSON and CSV → JSON. Nothing leaves your device.",
+  "start_url": ".",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#ff6a00",
+  "lang": "en",
+  "icons": [
+    { "src": "assets/favicon.ico", "sizes": "48x48 64x64", "type": "image/x-icon" }
+   
+  ]
+}

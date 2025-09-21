@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bookmark JSON | JSON Studio Lite</title>
+  <meta name="description" content="Bookmark JSON sample with schema notes and a ready-to-copy example. Uses JSON Studio Lite's black header and footer." />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="manifest" href="manifest.webmanifest" />
+
+<link rel="preload" href="../assets/styles.css" as="style">
+<link rel="stylesheet" href="../assets/styles.css">
+<link rel="stylesheet" href="../styles/theme.css">
+<link rel="icon" href="../assets/favicon.ico">
+<link rel="manifest" href="../manifest.webmanifest">
+
+
+  <!-- Page-specific styles -->
+  <style>
+    :root{
+      --bg:#f3f5f8; --text:#0c0f14; --muted:#4d5562; --brand:#ff6a00; --link:#0b6bff;
+      --panel:#ffffff; --panel-2:#f6f8fb; --border:#e4e7ee; --code:#0f172a; --ok:#2ecc71;
+      --radius:12px; --shadow:0 10px 30px rgba(0,0,0,.08); --maxw:1100px;
+    }
+    html[data-theme="dark"]{
+      --bg:#0f1115; --text:#e7eaf0; --muted:#9aa3b2; --link:#7ab7ff;
+      --panel:#171a21; --panel-2:#1e2430; --border:#1b2030; --code:#0b1020;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .brand .logo-skeleton,
+.brand .brand-name { display:none; }
+
+.brand-logo{ height:32px; display:block }
+@media (min-width:1024px){ .brand-logo{ height:36px } }
+
+
+    /* base */
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    a{color:var(--link);text-decoration:none}
+    img,svg{display:block;max-width:100%;height:auto}
+    .container{max-width:var(--maxw);margin:auto;padding:0 20px}
+
+    /* page sections */
+    .page-content{padding:28px 0 64px}
+    .page-title{font-size:34px;margin:0 0 6px}
+    .page-sub{color:var(--muted);margin:0 0 18px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+    .note{background:var(--panel-2);border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin-top:14px}
+    h2{font-size:26px;margin:28px 0 10px}
+    .btn{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:var(--shadow)}
+    .btn-primary{background:var(--brand);color:#111;border-color:transparent;font-weight:800}
+    .flex{display:flex;align-items:center;gap:10px}
+    .mt-12{margin-top:12px} .mt-28{margin-top:28px}
+
+    /* code block */
+    .code-wrap{position:relative}
+    .copy-btn{position:absolute;right:10px;top:10px}
+    pre.code{background:var(--code);color:#dbe6ff;padding:18px;border-radius:12px;border:1px solid #131a33;overflow:auto}
+
+    /* prose/checklist */
+    .prose p{margin:0 0 10px}
+    .prose ul{margin:6px 0 12px 18px}
+    .checklist{list-style:none;padding:0;margin:10px 0 0}
+    .checklist li{padding-left:28px;position:relative;margin:8px 0}
+    .checklist li::before{content:"✓";position:absolute;left:0;top:0;color:var(--ok);font-weight:900}
+
+    /* feedback card (uses your look) */
+    .feedback-section{max-width:960px;margin:40px auto 10px;padding:22px;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.05)}
+    html[data-theme="dark"] .feedback-section{background:#1e2430;color:#e6edf3;}
+    .feedback-form{display:grid; gap:12px;}
+    .feedback-form textarea{min-height:140px}
+
+    /* responsive */
+    @media (max-width:860px){
+      .page-title{font-size:28px}
+      .footer-container{grid-template-columns:1fr;gap:8px}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Header (your exact theme structure/classes) ===== -->
+  <header class="topbar">
+         <div class="brand">
+  <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+    <img src="../assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+  </a>
+</div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab" href="../view/json-format-viewer.html">View</a>
+<a class="tab" href="../index.html">Convert</a>
+<a class="tab" href="../json-diff-checker.html">Difference</a>
+<a class="tab active" href="../samples.html">Samples</a>
+    </nav>
+    <div class="actions">
+      <button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="container page-content">
+    <section>
+      <h1 class="page-title">Bookmark JSON</h1>
+      <p class="page-sub">A practical JSON blueprint for saving bookmarks with tags, notes, and timestamps — perfect for a bookmarking app or a personal knowledge base.</p>
+    </section>
+
+    <section class="card">
+      <div style="display:flex;justify-content:center">
+        <!-- inline icon -->
+        <svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Bookmark icon">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffba4e"/><stop offset="1" stop-color="#ff6a00"/>
+            </linearGradient>
+          </defs>
+          <rect x="20" y="20" width="120" height="120" rx="24" fill="url(#g)"/>
+          <path d="M64 44h32a6 6 0 0 1 6 6v66l-22-14-22 14V50a6 6 0 0 1 6-6z" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="note">
+        This JSON contains a <code>meta</code> section (owner, created/updated, default sorting) and a
+        <code>bookmarks</code> array. Each bookmark has a unique <code>id</code>, required
+        <code>title</code> and <code>url</code>, optional <code>description</code> and <code>tags</code>, and ISO-8601
+        timestamps. Add fields like <code>favorite</code>, <code>folder</code>, or <code>favicon</code> as needed.
+      </div>
+    </section>
+
+    <section class="mt-28">
+      <h2>JSON Data:</h2>
+      <div class="code-wrap">
+        <button class="btn copy-btn" data-target="#json1">Copy</button>
+        <pre class="code" id="json1"><code>{
+  "meta": {
+    "name": "My Bookmarks",
+    "owner": "you@example.com",
+    "created_at": "2025-01-05T10:15:00Z",
+    "updated_at": "2025-09-20T18:45:00Z",
+    "sort": { "by": "updated_at", "order": "desc" }
+  },
+  "bookmarks": [
+    {
+      "id": 1,
+      "title": "JSON Studio Lite",
+      "url": "https://jsonstudio.io/",
+      "description": "Tools to view, convert, and compare JSON quickly.",
+      "tags": ["json", "tools", "dev"],
+      "created_at": "2025-02-15T10:00:00Z",
+      "updated_at": "2025-07-18T11:30:00Z",
+      "favorite": true
+    },
+    {
+      "id": 2,
+      "title": "Web Performance Checklist",
+      "url": "https://example.com/perf-checklist",
+      "description": "A living checklist for web perf audits.",
+      "tags": ["performance", "frontend"],
+      "created_at": "2025-03-20T14:00:00Z",
+      "updated_at": "2025-06-21T09:05:00Z",
+      "favorite": false
+    },
+    {
+      "id": 3,
+      "title": "Accessibility Basics",
+      "url": "https://example.com/a11y",
+      "description": "Intro guide to a11y principles and testing.",
+      "tags": ["a11y", "ux", "guides"],
+      "created_at": "2025-05-10T08:12:00Z",
+      "updated_at": "2025-08-03T16:22:00Z",
+      "favorite": false
+    }
+  ]
+}</code></pre>
+      </div>
+      <div class="flex mt-12">
+        <a class="btn btn-primary" href="view/json-tree.html">Open in View → JSON Tree</a>
+        <a class="btn" href="index.html">Open Convert Tool</a>
+      </div>
+    </section>
+
+    <section class="mt-28 prose">
+      <h2>Description:</h2>
+      <p>This sample models a minimal, scalable bookmark database that’s easy to sort, filter and sync. You can extend it freely without breaking existing data.</p>
+      <ul>
+        <li><code>meta</code> — Information about the list (owner, created/updated, default sorting).</li>
+        <li><code>bookmarks</code> — Array of bookmark objects.</li>
+      </ul>
+
+      <h3>Bookmark Object</h3>
+      <ul>
+        <li><code>id</code> (number) — unique identifier.</li>
+        <li><code>title</code> (string, required) — human-readable title.</li>
+        <li><code>url</code> (string, required) — absolute URL.</li>
+        <li><code>description</code> (string) — short note.</li>
+        <li><code>tags</code> (array&lt;string&gt;) — labels for grouping/filtering.</li>
+        <li><code>created_at</code> / <code>updated_at</code> (string) — ISO-8601 timestamps.</li>
+        <li><code>favorite</code> (boolean) — quick-access toggle.</li>
+      </ul>
+
+      <h3>Why this structure?</h3>
+      <ul>
+        <li>Portable between local apps, APIs, or static JSON.</li>
+        <li>Easy sorting by <code>updated_at</code> and tag-based filtering.</li>
+        <li>Future-proof: add <code>folder</code>, <code>favicon</code>, <code>archived</code>, etc.</li>
+      </ul>
+    </section>
+
+    <section class="mt-28">
+      <h2>Mini Schema (JSON Schema-style):</h2>
+      <div class="code-wrap">
+        <pre class="code"><code>{
+  "type": "object",
+  "required": ["bookmarks"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "owner": {"type": "string"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"},
+        "sort": {
+          "type": "object",
+          "properties": {
+            "by": {"type": "string", "enum": ["title","created_at","updated_at"]},
+            "order": {"type": "string", "enum": ["asc","desc"]}
+          }
+        }
+      }
+    },
+    "bookmarks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","title","url"],
+        "properties": {
+          "id": {"type": "integer"},
+          "title": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "description": {"type": "string"},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "created_at": {"type": "string", "format": "date-time"},
+          "updated_at": {"type": "string", "format": "date-time"},
+          "favorite": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="mt-28">
+      <h2>Use Cases:</h2>
+      <ul class="checklist">
+        <li>Seed data for a localStorage/SQLite bookmark app.</li>
+        <li>Sync across devices by merging on <code>updated_at</code>.</li>
+        <li>Create tag clouds or “recently updated” UIs easily.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Feedback -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field"><input type="text" required><label>Your Name</label></div>
+      <div class="field"><input type="email" required><label>Your Email</label></div>
+      <div class="field"><textarea rows="4" required></textarea><label>Your Message</label></div>
+      <div><button type="submit" class="btn gradient" style="padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#ff7a45,#5a7bff);color:#fff;font-weight:800;border:0">Submit</button></div>
+    </form>
+  </section>
+
+  <!-- ===== Footer (your exact structure/classes) ===== -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h3>⚡ JSON Studio Lite</h3>
+        <p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p>
+      </div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="view/json-format-viewer.html">View</a></li>
+          <li><a href="index.html">Convert</a></li>
+          <li><a href="json-diff-checker.html">Difference</a></li>
+          <li><a href="samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> JSON Studio Lite.</div>
+  </footer>
+
+  <!-- Minimal JS: theme toggle + copy + feedback toast -->
+  <script>
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Theme toggle persist
+    const root = document.documentElement;
+    const KEY = 'jsl-theme';
+    const saved = localStorage.getItem(KEY);
+    if (saved) root.setAttribute('data-theme', saved);
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem(KEY, next);
+    });
+
+    // Copy JSON
+    document.querySelectorAll('.copy-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const target = document.querySelector(btn.dataset.target);
+        const text = target ? target.innerText : '';
+        if (!text) return;
+        navigator.clipboard?.writeText(text).then(()=>{
+          const old = btn.textContent; btn.textContent='Copied';
+          setTimeout(()=>btn.textContent=old, 1200);
+        });
+      });
+    });
+
+    // Feedback
+    document.getElementById('feedbackForm')?.addEventListener('submit',(e)=>{
+      e.preventDefault();
+      alert('✅ Thanks for your feedback!');
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>

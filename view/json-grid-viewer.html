@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JSON Studio Lite — Grid View</title>
+  <meta name="description" content="Show JSON as a grid/table view. Same header, rail, footer as other pages." />
+  <link rel="icon" href="../assets/favicon.ico" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+
+  <!-- Base styles -->
+  <link rel="preload" href="../assets/styles.css" as="style">
+  <link rel="stylesheet" href="../assets/styles.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+
+  <!-- Ace Editor -->
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/mode-json.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-textmate.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-monokai.js"></script>
+
+  <style>
+    :root{
+      --pane-border:#d7dbe3;
+      --pane-toolbar:#e6e9ef;
+      --pane-bg:#ffffff;
+      --line-active:#fff4b3;
+      --btn-gradient: linear-gradient(90deg,#ff7e29,#3a8dff);
+      --btn-text:#fff;
+    }
+    html[data-theme="dark"]{
+      --pane-border:#1b2030;
+      --pane-toolbar:#1e2430;
+      --pane-bg:#141927;
+      --line-active:#23293a;
+      --btn-gradient: linear-gradient(90deg,#ff7e29,#3a8dff);
+      --btn-text:#fff;
+    }
+
+    .brand .logo-skeleton,.brand .brand-name{display:none;}
+    .brand-logo{height:32px;display:block}
+    @media (min-width:1024px){.brand-logo{height:36px}}
+
+    /* Layout */
+    .convert-grid{
+      display:grid;
+      grid-template-columns:1fr 220px 1fr;
+      gap:16px;
+      margin:22px auto;
+      max-width:1320px;
+    }
+    @media (max-width:980px){
+      .convert-grid{grid-template-columns:1fr}
+      .convert-center{order:-1}
+    }
+
+    .pane{background:transparent;border-radius:12px}
+    .pane-toolbar{
+      background:var(--pane-toolbar);
+      border:1px solid var(--pane-border);
+      border-bottom:none;border-radius:12px 12px 0 0;
+      padding:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap
+    }
+    .toolbar-right{margin-left:auto}
+    .toolbar-btn{
+      background:#fff;border:1px solid var(--pane-border);
+      height:32px;padding:0 10px;border-radius:8px;
+      font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer
+    }
+    html[data-theme="dark"] .toolbar-btn{background:#1b2030;color:#e6edf3}
+
+    .editor-shell{
+      border:1px solid var(--pane-border);
+      border-top:none;border-radius:0 0 12px 12px;
+      overflow:hidden;background:var(--pane-bg)
+    }
+    .ace-wrap{position:relative;height:560px;width:100%}
+    .ace_editor .ace_marker-layer .ace_active-line{background:var(--line-active)!important}
+
+    /* Center rail */
+    .convert-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:560px}
+    .mode-btn{
+      width:210px;height:64px;border-radius:16px;
+      display:grid;place-items:center;font-weight:800;cursor:pointer;text-decoration:none;
+      border:1px solid var(--pane-border);background:#fff;color:inherit;
+      box-shadow:0 6px 18px rgba(0,0,0,.06)
+    }
+    html[data-theme="dark"] .mode-btn{background:#1e2430;color:#e6edf3}
+    .mode-btn.active{
+      background:var(--btn-gradient)!important;color:var(--btn-text)!important;border:none;
+      box-shadow:0 8px 28px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12)
+    }
+    .status{text-align:center;font-weight:600;color:var(--muted)}
+/* Right pane should scroll (grid) */
+.schema-wrap{
+  border:1px solid var(--pane-border);
+  border-top:none;border-radius:0 0 12px 12px;
+  background:var(--pane-bg);
+  overflow:auto;              /* horizontal + vertical scroll */
+  height:560px;               /* FIX: fixed height -> scrollbar bottom par */
+}
+
+/* Mobile tweak so height thodi kam ho */
+@media (max-width:980px){
+  .schema-wrap{ height:520px; }
+}
+
+/* Grid table */
+.grid-table{
+  border-collapse:collapse;
+  font-size:14px;
+  width:max-content;          /* grow with columns */
+  min-width:980px;            /* force baseline so scrollbar appears */
+}
+.grid-table th,.grid-table td{
+  border:1px solid var(--pane-border);
+  padding:6px 8px;
+  text-align:left;
+  white-space:nowrap;         /* keep one-line cells */
+}
+.grid-table th{background:var(--pane-toolbar)}
+.error{color:red;font-weight:700;margin:8px 0}
+
+
+    /* ===== Right grid fullscreen ===== */
+    #output:fullscreen,
+    #output:-webkit-full-screen,
+    #output:-moz-full-screen{
+      background:var(--pane-bg);
+      color:inherit;
+      width:100vw;height:100vh;
+      padding:16px;overflow:auto;
+    }
+    #output:fullscreen .grid-table th,
+    #output:-webkit-full-screen .grid-table th,
+    #output:-moz-full-screen .grid-table th{
+      position:sticky;top:0;z-index:1;background:var(--pane-toolbar);
+    }
+    #output::backdrop{background:var(--pane-bg)}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="topbar">
+    <div class="brand">
+      <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+        <img src="../assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+      </a>
+    </div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab active" href="json-format-viewer.html">View</a>
+      <a class="tab" href="../index.html">Convert</a>
+      <a class="tab" href="../json-diff-checker.html">Difference</a>
+      <a class="tab" href="../samples.html">Samples</a>
+    </nav>
+    <div class="actions">
+      <button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="convert-grid">
+    <!-- Left -->
+    <section class="pane">
+      <header class="pane-toolbar">
+        <label class="toolbar-btn small" for="fileIn">⤴ Upload</label>
+        <input id="fileIn" type="file" accept=".json,.txt,application/json" hidden />
+        <button id="dlLeft" class="toolbar-btn small">⬇ Download</button>
+        <button id="copyLeft" class="toolbar-btn small">📋 Copy</button>
+        <div class="toolbar-right">
+          <button id="fsLeft" class="toolbar-btn small">⤢ Fullscreen</button>
+        </div>
+      </header>
+      <div class="editor-shell"><div id="editorLeft" class="ace-wrap"></div></div>
+    </section>
+
+    <!-- Rail -->
+    <aside class="convert-center">
+      <a class="mode-btn" href="json-format-viewer.html">{ } Format</a>
+      <a class="mode-btn" href="json-crack-viewer.html">Crack View</a>
+      <a class="mode-btn" href="json-db-viewer.html">DB View</a>
+      <button class="mode-btn active">Grid View</button>
+      <div id="status" class="status">Paste JSON on left → grid renders on right</div>
+    </aside>
+
+    <!-- Right pane -->
+    <section class="pane">
+      <header class="pane-toolbar">
+        <button id="dlRight" class="toolbar-btn small">⬇ Download</button>
+        <div class="toolbar-right">
+          <button id="fsRight" class="toolbar-btn small">⤢ Fullscreen</button>
+        </div>
+      </header>
+      <div class="schema-wrap">
+        <div id="output" class="schema-empty">Schema will appear here…</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Feedback -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field"><input type="text" required><label>Your Name</label></div>
+      <div class="field"><input type="email" required><label>Your Email</label></div>
+      <div class="field"><textarea rows="4" required></textarea><label>Your Message</label></div>
+      <div><button type="submit" class="btn gradient" style="padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#ff7a45,#5a7bff);color:#fff;font-weight:800;border:0">Submit</button></div>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left"><h3>⚡ JSON Studio Lite</h3><p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p></div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="json-format-viewer.html">View</a></li>
+          <li><a href="../index.html">Convert</a></li>
+          <li><a href="../json-diff-checker.html">Difference</a></li>
+          <li><a href="../samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="../assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="../assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="../assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> JSON Studio Lite.</div>
+  </footer>
+
+  <script>
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const root=document.documentElement;
+
+    // Init Ace
+    function mkEditor(id, theme){
+      const ed=ace.edit(id);
+      ed.session.setMode("ace/mode/json");
+      ed.setTheme(theme);
+      ed.setOptions({fontSize:"14px",tabSize:2,useSoftTabs:true,showGutter:true,wrap:false});
+      return ed;
+    }
+    const initTheme=root.getAttribute('data-theme')==='dark'?"ace/theme/monokai":"ace/theme/textmate";
+    const leftEd=mkEditor("editorLeft",initTheme);
+
+    // Flatten helper
+    function flatten(obj,parent="",res={}) {
+      for (const k in obj){
+        const key = parent ? parent+"."+k : k;
+        if (typeof obj[k]==="object" && obj[k]!==null && !Array.isArray(obj[k])) {
+          flatten(obj[k],key,res);
+        } else {
+          res[key]=obj[k];
+        }
+      }
+      return res;
+    }
+
+    function renderGrid(){
+      const out=document.getElementById("output");
+      out.innerHTML="";
+      let data;
+      try{ data=JSON.parse(leftEd.getValue()||""); }
+      catch(e){ out.innerHTML='<div class="error">❌ Invalid JSON</div>'; return; }
+      if(!Array.isArray(data)){ out.innerHTML='<div class="error">⚠ Expected array of objects</div>'; return; }
+
+      const rows=data.map(r=>flatten(r));
+      const cols=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+
+      let html="<table class='grid-table'><thead><tr>";
+      cols.forEach(c=>html+=`<th>${c}</th>`);
+      html+="</tr></thead><tbody>";
+      rows.forEach(r=>{
+        html+="<tr>";
+        cols.forEach(c=>html+=`<td>${r[c]!==undefined?r[c]:""}</td>`);
+        html+="</tr>";
+      });
+      html+="</tbody></table>";
+      out.innerHTML=html;
+    }
+
+    leftEd.session.on("change",renderGrid);
+
+    // File upload
+    document.getElementById("fileIn").addEventListener("change",e=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=>leftEd.setValue(String(r.result||""),-1); r.readAsText(f);
+    });
+
+    // Copy & Download
+    document.getElementById("copyLeft").onclick=()=>navigator.clipboard.writeText(leftEd.getValue()||"");
+    document.getElementById("dlLeft").onclick=()=>{
+      const blob=new Blob([leftEd.getValue()||""],{type:"application/json"});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="input.json"; a.click(); URL.revokeObjectURL(a.href);
+    };
+    document.getElementById("dlRight").onclick=()=>{
+      const blob=new Blob([document.getElementById("output").innerText||""],{type:"text/plain"});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="grid.txt"; a.click(); URL.revokeObjectURL(a.href);
+    };
+
+    // Fullscreen (Left editor)
+    document.getElementById('fsLeft').onclick=()=>{
+      const pane=document.getElementById('editorLeft');
+      if (document.fullscreenElement) { document.exitFullscreen?.(); }
+      else { pane.requestFullscreen?.(); }
+    };
+
+    // Fullscreen (Right grid)
+    document.getElementById('fsRight').onclick=()=>{
+      const pane=document.getElementById('output');
+      if (document.fullscreenElement === pane) {
+        document.exitFullscreen?.();
+      } else {
+        pane.requestFullscreen?.();
+      }
+    };
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click',()=>{
+      const next=root.getAttribute('data-theme')==='light'?'dark':'light';
+      root.setAttribute('data-theme',next);
+      const th=next==='dark'?"ace/theme/monokai":"ace/theme/textmate";
+      leftEd.setTheme(th);
+    });
+
+    // Feedback form
+    document.getElementById('feedbackForm').addEventListener('submit',(e)=>{
+      e.preventDefault(); alert('✅ Thanks for your feedback!'); e.target.reset();
+    });
+  </script>
+</body>
+</html>

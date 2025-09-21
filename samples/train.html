@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Train Tracking JSON | JSON Studio Lite</title>
+  <meta name="description" content="Train tracking JSON example with journey details, GPS location, stations, timings, ETA, and delay information. Built with JSON Studio Lite's black header and footer." />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="manifest" href="manifest.webmanifest" />
+
+  <!-- Base styles -->
+ <link rel="preload" href="../assets/styles.css" as="style">
+<link rel="stylesheet" href="../assets/styles.css">
+<link rel="stylesheet" href="../styles/theme.css">
+<link rel="icon" href="../assets/favicon.ico">
+<link rel="manifest" href="../manifest.webmanifest">
+
+
+  <!-- Page-specific styles -->
+  <style>
+    :root{
+      --bg:#f3f5f8; --text:#0c0f14; --muted:#4d5562; --brand:#ff6a00; --link:#0b6bff;
+      --panel:#ffffff; --panel-2:#f6f8fb; --border:#e4e7ee; --code:#0f172a; --ok:#2ecc71;
+      --radius:12px; --shadow:0 10px 30px rgba(0,0,0,.08); --maxw:1100px;
+    }
+    html[data-theme="dark"]{
+      --bg:#0f1115; --text:#e7eaf0; --muted:#9aa3b2; --link:#7ab7ff;
+      --panel:#171a21; --panel-2:#1e2430; --border:#1b2030; --code:#0b1020;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .brand .logo-skeleton,
+.brand .brand-name { display:none; }
+
+.brand-logo{ height:32px; display:block }
+@media (min-width:1024px){ .brand-logo{ height:36px } }
+
+
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    a{color:var(--link);text-decoration:none}
+    .container{max-width:var(--maxw);margin:auto;padding:0 20px}
+
+    .page-content{padding:28px 0 64px}
+    .page-title{font-size:34px;margin:0 0 6px}
+    .page-sub{color:var(--muted);margin:0 0 18px}
+    .breadcrumb{font-weight:700;font-size:14px;color:var(--muted);margin-bottom:8px}
+
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+    .note{background:var(--panel-2);border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin-top:14px}
+    h2{font-size:26px;margin:28px 0 10px}
+
+    .btn{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:var(--shadow)}
+    .btn-primary{background:var(--brand);color:#111;border-color:transparent;font-weight:800}
+    .flex{display:flex;align-items:center;gap:10px}
+    .mt-12{margin-top:12px} .mt-28{margin-top:28px}
+
+    .code-wrap{position:relative}
+    .copy-btn{position:absolute;right:10px;top:10px}
+    pre.code{background:var(--code);color:#dbe6ff;padding:18px;border-radius:12px;border:1px solid #131a33;overflow:auto}
+
+    .prose p{margin:0 0 10px}
+    .prose ul{margin:6px 0 12px 18px}
+
+    /* feedback */
+    .feedback-section{max-width:960px;margin:40px auto 10px;padding:22px;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.05)}
+    html[data-theme="dark"] .feedback-section{background:#1e2430;color:#e6edf3;}
+    .feedback-form{display:grid; gap:12px;}
+    .feedback-form textarea{min-height:140px}
+
+    /* hero image */
+    .hero-img{width:100%;max-width:690px;border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+    @media (max-width:860px){.page-title{font-size:28px}}
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="topbar">
+         <div class="brand">
+  <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+    <img src="../assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+  </a>
+</div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab" href="../view/json-format-viewer.html">View</a>
+<a class="tab" href="../index.html">Convert</a>
+<a class="tab" href="../json-diff-checker.html">Difference</a>
+<a class="tab active" href="../samples.html">Samples</a>
+    </nav>
+    <div class="actions"><button id="themeToggle" class="btn ghost" title="Toggle theme">☾</button></div>
+  </header>
+
+  <!-- Main -->
+  <main class="container page-content">
+    <div class="breadcrumb">Transport /</div>
+    <h1 class="page-title">Train Tracking JSON</h1>
+    <p class="page-sub">Track trains with live GPS, station events, delays, and expected arrival times — modeled for real-time dashboards and passenger apps.</p>
+
+    <section class="card">
+      <div style="display:flex;justify-content:center">
+        <!-- ✅ Using your asset -->
+        <img src="assets/samples/train.png" alt="Train tracking illustration" class="hero-img" loading="lazy" decoding="async">
+      </div>
+      <div class="note">
+        This JSON covers a full train journey: identifiers, current GPS, current station,
+        next station, status, estimated arrival, delay tracking, and route history.
+      </div>
+    </section>
+
+    <section class="mt-28">
+      <h2>JSON Data:</h2>
+      <div class="code-wrap">
+        <button class="btn copy-btn" data-target="#json1">Copy</button>
+        <pre class="code" id="json1"><code>{
+  "train": {
+    "number": "12295",
+    "name": "Coastal Express",
+    "operator": "National Railways",
+    "status": "running",
+    "last_updated": "2025-09-20T21:35:00Z"
+  },
+  "current_location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "station": {
+      "code": "NYP",
+      "name": "New York Penn Station",
+      "arrival_time": "2025-09-20T21:20:00Z",
+      "departure_time": "2025-09-20T21:35:00Z"
+    }
+  },
+  "next_station": {
+    "code": "PHL",
+    "name": "Philadelphia 30th Street",
+    "scheduled_arrival": "2025-09-20T23:10:00Z",
+    "estimated_arrival": "2025-09-20T23:25:00Z",
+    "scheduled_departure": "2025-09-20T23:20:00Z",
+    "platform": "4",
+    "delay_minutes": 15
+  },
+  "route_history": [
+    { "code": "BOS", "name": "Boston South Station", "departed": "2025-09-20T17:00:00Z" },
+    { "code": "NYP", "name": "New York Penn Station", "departed": "2025-09-20T21:35:00Z" }
+  ],
+  "metrics": {
+    "distance_travelled_km": 310,
+    "avg_speed_kmh": 95
+  }
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="mt-28 prose">
+      <h2>Description:</h2>
+      <p>This JSON response is structured for live train tracking systems, combining schedule and GPS feeds:</p>
+      <ul>
+        <li><code>train</code> — identifiers, name, operator, overall status, last update timestamp.</li>
+        <li><code>current_location</code> — GPS coordinates and the most recent station event.</li>
+        <li><code>next_station</code> — planned vs. estimated arrival/departure, platform, delay tracking.</li>
+        <li><code>route_history</code> — list of previous stations with timestamps.</li>
+        <li><code>metrics</code> — aggregate journey stats like distance and speed.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Feedback -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field"><input type="text" required><label>Your Name</label></div>
+      <div class="field"><input type="email" required><label>Your Email</label></div>
+      <div class="field"><textarea rows="4" required></textarea><label>Your Message</label></div>
+      <div><button type="submit" class="btn gradient" style="padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#ff7a45,#5a7bff);color:#fff;font-weight:800;border:0">Submit</button></div>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h3>⚡ JSON Studio Lite</h3>
+        <p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p>
+      </div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="view/json-format-viewer.html">View</a></li>
+          <li><a href="index.html">Convert</a></li>
+          <li><a href="json-diff-checker.html">Difference</a></li>
+          <li><a href="samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> JSON Studio Lite.</div>
+  </footer>
+
+  <!-- Minimal JS -->
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const root=document.documentElement,KEY='jsl-theme';const saved=localStorage.getItem(KEY);if(saved)root.setAttribute('data-theme',saved);
+    document.getElementById('themeToggle').addEventListener('click',()=>{const next=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',next);localStorage.setItem(KEY,next);});
+    document.querySelectorAll('.copy-btn').forEach(btn=>{btn.addEventListener('click',()=>{const text=document.querySelector(btn.dataset.target)?.innerText||'';if(!text)return;navigator.clipboard.writeText(text).then(()=>{const old=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=old,1200);});});});
+    document.getElementById('feedbackForm')?.addEventListener('submit',(e)=>{e.preventDefault();alert('✅ Thanks for your feedback!');e.target.reset();});
+  </script>
+</body>
+</html>

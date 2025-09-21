@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Analytics Dashboard Data JSON | JSON Studio Lite</title>
+  <meta name="description" content="A realistic analytics dashboard API response JSON with KPIs, traffic sources, devices, geographies, goals, events, and timeseries. Built for JSON Studio Lite." />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="manifest" href="manifest.webmanifest" />
+
+  <!-- Base styles (your site theme) -->
+<link rel="preload" href="../assets/styles.css" as="style">
+<link rel="stylesheet" href="../assets/styles.css">
+<link rel="stylesheet" href="../styles/theme.css">
+<link rel="icon" href="../assets/favicon.ico">
+<link rel="manifest" href="../manifest.webmanifest">
+
+
+  <!-- Page-specific styles -->
+  <style>
+    :root{
+      --bg:#f3f5f8; --text:#0c0f14; --muted:#4d5562; --brand:#ff6a00; --link:#0b6bff;
+      --panel:#ffffff; --panel-2:#f6f8fb; --border:#e4e7ee; --code:#0f172a; --ok:#2ecc71;
+      --radius:12px; --shadow:0 10px 30px rgba(0,0,0,.08); --maxw:1100px;
+    }
+    html[data-theme="dark"]{
+      --bg:#0f1115; --text:#e7eaf0; --muted:#9aa3b2; --link:#7ab7ff;
+      --panel:#171a21; --panel-2:#1e2430; --border:#1b2030; --code:#0b1020;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .brand .logo-skeleton,
+.brand .brand-name { display:none; }
+
+.brand-logo{ height:32px; display:block }
+@media (min-width:1024px){ .brand-logo{ height:36px } }
+
+
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial}
+    a{color:var(--link);text-decoration:none}
+    img,svg{display:block;max-width:100%;height:auto}
+    .container{max-width:var(--maxw);margin:auto;padding:0 20px}
+
+    .page-content{padding:28px 0 64px}
+    .page-title{font-size:34px;margin:0 0 6px}
+    .breadcrumb{font-weight:700;font-size:14px;color:var(--muted);margin-bottom:8px}
+    .page-sub{color:var(--muted);margin:0 0 18px}
+
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+    .note{background:var(--panel-2);border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin-top:14px}
+    h2{font-size:26px;margin:28px 0 10px}
+    .btn{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:var(--shadow)}
+    .btn-primary{background:var(--brand);color:#111;border-color:transparent;font-weight:800}
+    .flex{display:flex;align-items:center;gap:10px}
+    .mt-12{margin-top:12px} .mt-20{margin-top:20px} .mt-28{margin-top:28px}
+
+    .code-wrap{position:relative}
+    .copy-btn{position:absolute;right:10px;top:10px}
+    pre.code{background:var(--code);color:#dbe6ff;padding:18px;border-radius:12px;border:1px solid #131a33;overflow:auto}
+
+    .prose p{margin:0 0 10px}
+    .prose ul{margin:6px 0 12px 18px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:860px){.page-title{font-size:28px}.grid-2{grid-template-columns:1fr}}
+
+    /* feedback block (same pattern saved in memory) */
+    .feedback-section{max-width:960px;margin:40px auto 10px;padding:22px;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.05)}
+    html[data-theme="dark"] .feedback-section{background:#1e2430;color:#e6edf3;}
+    .feedback-form{display:grid; gap:12px;}
+    .feedback-form textarea{min-height:140px}
+  </style>
+</head>
+<body>
+
+  <!-- ===== Header (your exact theme structure/classes) ===== -->
+  <header class="topbar">
+         <div class="brand">
+  <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+    <img src="../assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+  </a>
+</div>
+    <nav class="tabs" aria-label="Primary">
+     <a class="tab" href="../view/json-format-viewer.html">View</a>
+<a class="tab" href="../index.html">Convert</a>
+<a class="tab" href="../json-diff-checker.html">Difference</a>
+<a class="tab active" href="../samples.html">Samples</a>
+    </nav>
+    <div class="actions">
+      <button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="container page-content">
+    <div class="breadcrumb">Analytics /</div>
+    <h1 class="page-title">Analytics Dashboard Data JSON</h1>
+    <p class="page-sub">A realistic, production-shaped analytics payload with KPIs, breakdowns, and a concise daily timeseries — ideal for charting and dashboards.</p>
+
+    <section class="card">
+      <div style="display:flex;justify-content:center">
+        <svg width="180" height="120" viewBox="0 0 180 120" role="img" aria-label="Analytics illustration">
+          <rect x="8" y="12" width="164" height="96" rx="8" fill="#e9eefc"/>
+          <rect x="18" y="24" width="16" height="70" rx="3" fill="#ff8f43"/>
+          <rect x="42" y="44" width="16" height="50" rx="3" fill="#ff8f43"/>
+          <rect x="66" y="32" width="16" height="62" rx="3" fill="#ff8f43"/>
+          <rect x="90" y="56" width="16" height="38" rx="3" fill="#ff8f43"/>
+          <circle cx="125" cy="60" r="22" stroke="#1e66f5" stroke-width="6" fill="none"/>
+          <line x1="140" y1="76" x2="158" y2="94" stroke="#1e66f5" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="note">
+        This sample shows a <strong>dashboard-ready</strong> response: headline KPIs, traffic mix, devices and geography,
+        goal conversions, top content, events, anomalies, and a 14-day <code>timeseries</code> optimized for charting.
+      </div>
+    </section>
+
+    <section class="mt-28">
+      <h2>JSON:</h2>
+      <div class="code-wrap">
+        <button class="btn copy-btn" data-target="#json1">Copy</button>
+        <pre class="code" id="json1"><code>{
+  "id": "report_2025-09-20",
+  "generated_at": "2025-09-20T18:45:00Z",
+  "range": { "from": "2025-09-07", "to": "2025-09-20", "timezone": "UTC" },
+  "kpis": {
+    "pageviews": { "total": 124560, "unique": 80312, "avg_time_on_page": 71, "bounce_rate": 0.34 },
+    "users": { "new": 18230, "total": 96540, "sessions_per_user": 2.3, "active": 24120 },
+    "revenue": { "total": 58230.50, "avg_order_value": 47.2, "conversion_rate": 0.021 }
+  },
+  "traffic_sources": [
+    {"source":"direct","share":0.31},
+    {"source":"organic","share":0.42},
+    {"source":"referral","share":0.17},
+    {"source":"social","share":0.10}
+  ],
+  "devices": [
+    {"type":"mobile","share":0.63},
+    {"type":"desktop","share":0.32},
+    {"type":"tablet","share":0.05}
+  ],
+  "geography": {
+    "top_countries": [
+      {"country":"US","users":40210},
+      {"country":"IN","users":12140},
+      {"country":"GB","users":8610},
+      {"country":"DE","users":7540},
+      {"country":"BR","users":6480}
+    ]
+  },
+  "goals": [
+    {"id":"signup","name":"Sign Up","conversions":5830},
+    {"id":"checkout","name":"Checkout","conversions":1210},
+    {"id":"newsletter","name":"Newsletter Opt-in","conversions":2780}
+  ],
+  "top_pages": [
+    {"path":"/","title":"Home","views":28190,"entrances":14330,"exit_rate":0.41},
+    {"path":"/pricing","title":"Pricing","views":14320,"entrances":8022,"exit_rate":0.22},
+    {"path":"/docs/getting-started","title":"Getting Started","views":11140,"entrances":4821,"exit_rate":0.18}
+  ],
+  "events": [
+    {"category":"video","action":"play","label":"intro.mp4","count":1450},
+    {"category":"cta","action":"click","label":"signup_nav","count":6210}
+  ],
+  "anomalies": [
+    {"date":"2025-09-15","metric":"pageviews","expected":8200,"actual":11120,"zscore":3.1,"note":"Launch blog post"}
+  ],
+  "timeseries": [
+    {"date":"2025-09-07","pv":7700,"users":5400,"rev":1980.2},
+    {"date":"2025-09-08","pv":8120,"users":5630,"rev":2012.9},
+    {"date":"2025-09-09","pv":8310,"users":5745,"rev":2140.1},
+    {"date":"2025-09-10","pv":8450,"users":5861,"rev":2193.0},
+    {"date":"2025-09-11","pv":9022,"users":6124,"rev":2395.6},
+    {"date":"2025-09-12","pv":9341,"users":6310,"rev":2461.7},
+    {"date":"2025-09-13","pv":9510,"users":6422,"rev":2524.3},
+    {"date":"2025-09-14","pv":9211,"users":6284,"rev":2478.6},
+    {"date":"2025-09-15","pv":11120,"users":7420,"rev":3240.0},
+    {"date":"2025-09-16","pv":10010,"users":7012,"rev":2924.2},
+    {"date":"2025-09-17","pv":9880,"users":6882,"rev":2860.7},
+    {"date":"2025-09-18","pv":10140,"users":7041,"rev":2941.4},
+    {"date":"2025-09-19","pv":10322,"users":7120,"rev":3020.9},
+    {"date":"2025-09-20","pv":10502,"users":7249,"rev":3102.6}
+  ]
+}</code></pre>
+      </div>
+      <div class="flex mt-12">
+        <a class="btn btn-primary" href="view/json-tree.html">Open in View → JSON Tree</a>
+        <a class="btn" href="index.html">Open Convert Tool</a>
+      </div>
+    </section>
+
+    <section class="mt-28 prose">
+      <h2>Description:</h2>
+      <p>This response mirrors what a modern analytics API returns for a dashboard card set. It includes headline metrics (<code>kpis</code>), distribution breakdowns (<code>traffic_sources</code>, <code>devices</code>, <code>geography</code>), goal conversions, top content, tracked events, detected anomalies, and a compact daily <code>timeseries</code> ready for charting libraries.</p>
+      <div class="grid-2">
+        <div>
+          <h3>Design choices</h3>
+          <ul>
+            <li><strong>Small payload, big coverage:</strong> just enough fields to drive bar/line/pie widgets.</li>
+            <li><strong>Consistent keys:</strong> short camelCase in series (<code>pv</code>, <code>rev</code>) for faster plotting.</li>
+            <li><strong>Extensible:</strong> add channels, segments, or more goals without breaking consumers.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Quick tips</h3>
+          <ul>
+            <li>Aggregate the <code>timeseries</code> for weekly/monthly views.</li>
+            <li>Flag anomalies by comparing to a moving average or a Prophet forecast.</li>
+            <li>Join <code>top_pages</code> with CMS slugs to create drilldowns.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-28">
+      <h2>Mini Schema (JSON Schema-style):</h2>
+      <div class="code-wrap">
+        <pre class="code"><code>{
+  "type":"object",
+  "required":["kpis","timeseries"],
+  "properties":{
+    "id":{"type":"string"},
+    "generated_at":{"type":"string","format":"date-time"},
+    "range":{"type":"object","properties":{
+      "from":{"type":"string","format":"date"},
+      "to":{"type":"string","format":"date"},
+      "timezone":{"type":"string"}
+    }},
+    "kpis":{"type":"object","properties":{
+      "pageviews":{"type":"object","properties":{
+        "total":{"type":"integer"},
+        "unique":{"type":"integer"},
+        "avg_time_on_page":{"type":"number"},
+        "bounce_rate":{"type":"number"}
+      }},
+      "users":{"type":"object","properties":{
+        "new":{"type":"integer"},
+        "total":{"type":"integer"},
+        "sessions_per_user":{"type":"number"},
+        "active":{"type":"integer"}
+      }},
+      "revenue":{"type":"object","properties":{
+        "total":{"type":"number"},
+        "avg_order_value":{"type":"number"},
+        "conversion_rate":{"type":"number"}
+      }}
+    }},
+    "traffic_sources":{"type":"array","items":{"type":"object","properties":{
+      "source":{"type":"string"}, "share":{"type":"number"}
+    }}}},
+    "devices":{"type":"array","items":{"type":"object","properties":{
+      "type":{"type":"string"}, "share":{"type":"number"}
+    }}}},
+    "geography":{"type":"object","properties":{
+      "top_countries":{"type":"array","items":{"type":"object","properties":{
+        "country":{"type":"string"}, "users":{"type":"integer"}
+      }}}}
+    }},
+    "goals":{"type":"array","items":{"type":"object","properties":{
+      "id":{"type":"string"},"name":{"type":"string"},"conversions":{"type":"integer"}
+    }}}},
+    "top_pages":{"type":"array","items":{"type":"object","properties":{
+      "path":{"type":"string"},"title":{"type":"string"},"views":{"type":"integer"},
+      "entrances":{"type":"integer"},"exit_rate":{"type":"number"}
+    }}}},
+    "events":{"type":"array","items":{"type":"object","properties":{
+      "category":{"type":"string"},"action":{"type":"string"},
+      "label":{"type":"string"},"count":{"type":"integer"}
+    }}}},
+    "anomalies":{"type":"array","items":{"type":"object","properties":{
+      "date":{"type":"string","format":"date"},
+      "metric":{"type":"string"},"expected":{"type":"number"},
+      "actual":{"type":"number"},"zscore":{"type":"number"},"note":{"type":"string"}
+    }}}},
+    "timeseries":{"type":"array","items":{"type":"object","properties":{
+      "date":{"type":"string","format":"date"},
+      "pv":{"type":"integer"},"users":{"type":"integer"},"rev":{"type":"number"}
+    }}}}
+  }
+}</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Feedback (same component saved in memory) ===== -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field"><input type="text" required><label>Your Name</label></div>
+      <div class="field"><input type="email" required><label>Your Email</label></div>
+      <div class="field"><textarea rows="4" required></textarea><label>Your Message</label></div>
+      <div><button type="submit" class="btn gradient" style="padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#ff7a45,#5a7bff);color:#fff;font-weight:800;border:0">Submit</button></div>
+    </form>
+  </section>
+
+  <!-- ===== Footer (your exact structure/classes) ===== -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h3>⚡ JSON Studio Lite</h3>
+        <p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p>
+      </div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="view/json-format-viewer.html">View</a></li>
+          <li><a href="index.html">Convert</a></li>
+          <li><a href="json-diff-checker.html">Difference</a></li>
+          <li><a href="samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> JSON Studio Lite.</div>
+  </footer>
+
+  <!-- Minimal JS: theme toggle + copy + feedback toast -->
+  <script>
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Theme toggle persist
+    const root = document.documentElement;
+    const KEY = 'jsl-theme';
+    const saved = localStorage.getItem(KEY);
+    if (saved) root.setAttribute('data-theme', saved);
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem(KEY, next);
+    });
+
+    // Copy JSON
+    document.querySelectorAll('.copy-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const target = document.querySelector(btn.dataset.target);
+        const text = target ? target.innerText : '';
+        if (!text) return;
+        navigator.clipboard?.writeText(text).then(()=>{
+          const old = btn.textContent; btn.textContent='Copied';
+          setTimeout(()=>btn.textContent=old, 1200);
+        });
+      });
+    });
+
+    // Feedback
+    document.getElementById('feedbackForm')?.addEventListener('submit',(e)=>{
+      e.preventDefault();
+      alert('✅ Thanks for your feedback!');
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>

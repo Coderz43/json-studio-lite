@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JSON Studio Lite — DB View</title>
+  <meta name="description" content="Summarize database-like schema from JSON in table view." />
+  <link rel="icon" href="../assets/favicon.ico" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+
+  <!-- Base styles -->
+  <link rel="preload" href="../assets/styles.css" as="style">
+  <link rel="stylesheet" href="../assets/styles.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+
+  <!-- Ace -->
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/mode-json.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-textmate.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-monokai.js"></script>
+
+  <style>
+  :root{
+    --pane-border:#d7dbe3;
+    --pane-toolbar:#e6e9ef;
+    --pane-bg:#ffffff;
+    --line-active:#fff4b3;
+    --btn-gradient: linear-gradient(90deg,#ff7e29,#3a8dff);
+    --btn-text:#fff;
+  }
+  html[data-theme="dark"]{
+    --pane-border:#1b2030;
+    --pane-toolbar:#1e2430;
+    --pane-bg:#141927;
+    --line-active:#23293a;
+    --btn-gradient: linear-gradient(90deg,#ff7e29,#3a8dff);
+    --btn-text:#fff;
+  }
+  .brand .logo-skeleton,
+  .brand .brand-name { display:none; }
+  .brand-logo{ height:32px; display:block }
+  @media (min-width:1024px){ .brand-logo{ height:36px } }
+
+  /* Layout */
+  .convert-grid{
+    display:grid;
+    grid-template-columns:1fr 220px 1fr;
+    gap:16px;
+    margin:22px auto;
+    max-width:1400px; /* widen to match Crack */
+  }
+  @media (max-width:980px){
+    .convert-grid{ grid-template-columns:1fr; }
+    .convert-center{ order:-1; }
+  }
+
+  .pane{ background:transparent; border-radius:12px; }
+  .pane-toolbar{
+    background:var(--pane-toolbar);
+    border:1px solid var(--pane-border);
+    border-bottom:none; border-radius:12px 12px 0 0;
+    padding:6px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+  }
+  .toolbar-right{ margin-left:auto; }
+  /* ========= Right-pane fullscreen fixes ========= */
+#schemaPane:fullscreen,
+#schemaPane:-webkit-full-screen,
+#schemaPane:-moz-full-screen {
+  background: var(--pane-bg);
+  color: var(--text);
+  width: 100vw;
+  height: 100vh;
+  padding: 16px;
+  overflow: auto;
+}
+
+/* sticky header so columns dikhte rahein while scrolling */
+#schemaPane:fullscreen .schema-table th,
+#schemaPane:-webkit-full-screen .schema-table th,
+#schemaPane:-moz-full-screen .schema-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--pane-toolbar);
+}
+
+/* optional: backdrop color (some browsers) */
+#schemaPane::backdrop {
+  background: var(--pane-bg);
+}
+
+
+  /* Compact toolbar buttons */
+  .toolbar-btn{
+    background:#fff; border:1px solid var(--pane-border);
+    height:32px; padding:0 10px; border-radius:8px;
+    font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px;
+    line-height:1; cursor:pointer;
+  }
+  html[data-theme="dark"] .toolbar-btn{ background:#1b2030; color:#e6edf3; }
+
+  .editor-shell{
+    border:1px solid var(--pane-border);
+    border-top:none; border-radius:0 0 12px 12px;
+    overflow:hidden; background:var(--pane-bg);
+  }
+  .ace-wrap{ position:relative; height:560px; width:100%; }
+
+  /* Ace tweaks */
+  .ace_editor .ace_marker-layer .ace_active-line{ background:var(--line-active) !important; }
+  html[data-theme="dark"] .ace-monokai{
+    background-color:#141927 !important;
+    color:#e6edf3 !important;
+  }
+  html[data-theme="dark"] .ace-monokai .ace_text-layer{ color:#e6edf3 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_gutter{
+    background:#141927 !important; color:#8b93a6 !important; border-right:1px solid #1b2030 !important;
+  }
+  html[data-theme="dark"] .ace-monokai .ace_print-margin{ background:#141927 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_cursor{ color:#e6edf3 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_marker-layer .ace_selection{ background:#2b3550 !important; }
+
+  /* Center rail (4 buttons) */
+  .convert-center{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    min-height:560px;
+  }
+  .mode-btn{
+    width:210px; height:64px; border-radius:16px;
+    display:grid; place-items:center; font-weight:800; cursor:pointer; text-decoration:none;
+    border:1px solid var(--pane-border); background:#fff; color:inherit;
+    box-shadow:0 6px 18px rgba(0,0,0,.06);
+  }
+  html[data-theme="dark"] .mode-btn{ background:#1e2430; color:#e6edf3; }
+  .mode-btn.active{
+    background:var(--btn-gradient) !important; color:var(--btn-text) !important; border:none;
+    box-shadow:0 8px 28px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12);
+  }
+
+  .status{ text-align:center; font-weight:600; color:var(--muted); }
+
+  /* Right-pane schema table */
+  .schema-wrap{ padding:0; background:var(--pane-bg); }
+  .schema-table{
+    width:100%; border-collapse:collapse; font-size:14px;
+  }
+  .schema-table th, .schema-table td{
+    border-top:1px solid var(--pane-border);
+    border-bottom:1px solid var(--pane-border);
+    padding:10px 12px; vertical-align:top;
+  }
+  .schema-table th{
+    text-align:left; background:#f6f8fb;
+  }
+  html[data-theme="dark"] .schema-table th{ background:#1e2430; }
+  .schema-empty{ padding:18px; color:var(--muted); }
+
+  /* Feedback + footer */
+  .feedback-section{max-width:960px;margin:40px auto 10px;padding:22px;background:#fff;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.05)}
+  html[data-theme="dark"] .feedback-section{background:#1e2430;color:#e6edf3;}
+  .feedback-form{display:grid; gap:12px;}
+  .feedback-form textarea{min-height:140px}
+
+  .site-footer{margin:30px 0 10px;border-top:1px solid #ececec}
+  .footer-container{max-width:1260px;margin:auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;padding:18px}
+  .footer-bottom{border-top:1px solid #f0f0f0;padding:10px 18px;color:#6b7280;text-align:center}
+  </style>
+
+</head>
+<body>
+  <!-- Header -->
+  <header class="topbar">
+    <div class="brand">
+      <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+        <img src="../assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+      </a>
+    </div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab active" href="json-format-viewer.html">View</a>
+      <a class="tab" href="../index.html">Convert</a>
+      <a class="tab" href="../json-diff-checker.html">Difference</a>
+      <a class="tab" href="../samples.html">Samples</a>
+    </nav>
+    <div class="actions"><button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button></div>
+  </header>
+
+  <!-- Main -->
+  <main class="convert-grid">
+    <!-- Left pane -->
+    <section class="pane">
+      <header class="pane-toolbar">
+        <label class="toolbar-btn small" for="fileIn">⤴ Upload</label>
+        <input id="fileIn" type="file" accept=".json,.txt,application/json" hidden />
+        <button id="dlLeft" class="toolbar-btn small">⬇ Download</button>
+        <button id="copyLeft" class="toolbar-btn small">📋 Copy</button>
+        <button id="historyBtn" class="toolbar-btn small">🕘 History</button>
+        <button id="saveBtn" class="toolbar-btn small">💾 Save</button>
+        <div class="toolbar-right">
+          <button id="fsLeft" class="toolbar-btn small">⤢ Fullscreen</button>
+        </div>
+      </header>
+      <div class="editor-shell"><div id="edLeft" class="ace-wrap"></div></div>
+    </section>
+
+    <!-- Center rail -->
+    <aside class="convert-center">
+      <a class="mode-btn" href="json-format-viewer.html">{ } Format</a>
+      <a class="mode-btn" href="json-crack-viewer.html">Crack View</a>
+      <button class="mode-btn active" type="button">DB View</button>
+      <a class="mode-btn" href="json-grid-viewer.html">Grid View</a>
+      <div id="status" class="status">Paste JSON on left to extract DB-style schema.</div>
+    </aside>
+
+    <!-- Right pane -->
+    <section class="pane">
+      <header class="pane-toolbar">
+        <button id="dlRight" class="toolbar-btn small">⬇ Download</button>
+        <div class="toolbar-right">
+          <button id="fsRight" class="toolbar-btn small">⤢ Fullscreen</button>
+        </div>
+      </header>
+      <div class="editor-shell schema-wrap">
+        <!-- NOTE: right side is now a schema table, not an Ace editor -->
+        <div id="schemaPane" class="schema-empty">Schema will appear here…</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Feedback -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field"><input type="text" required><label>Your Name</label></div>
+      <div class="field"><input type="email" required><label>Your Email</label></div>
+      <div class="field"><textarea rows="4" required></textarea><label>Your Message</label></div>
+      <div><button type="submit" class="btn gradient" style="padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#ff7a45,#5a7bff);color:#fff;font-weight:800;border:0">Submit</button></div>
+    </form>
+  </section>
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h3>⚡ JSON Studio Lite</h3>
+        <p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p>
+      </div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="json-format-viewer.html">View</a></li>
+          <li><a href="../index.html">Convert</a></li>
+          <li><a href="../json-diff-checker.html">Difference</a></li>
+          <li><a href="../samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="../assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="../assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="../assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> JSON Studio Lite.</div>
+  </footer>
+
+  <script>
+    // Year
+    const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
+
+    // Ace setup with numbered gutters + active line
+    function mkEditor(id, readOnly=false){
+      const ed = ace.edit(id);
+      ed.session.setMode("ace/mode/json");
+      ed.setTheme(document.documentElement.getAttribute('data-theme')==='dark'
+        ? "ace/theme/monokai" : "ace/theme/textmate");
+      ed.setOptions({
+        readOnly,
+        showGutter:true,
+        highlightActiveLine:true,
+        showPrintMargin:true,
+        printMargin:100,
+        fontSize:"14px",
+        tabSize:2,
+        useSoftTabs:true,
+        wrap:false
+      });
+      ed.session.setValue("", -1);
+      return ed;
+    }
+    const leftEd  = mkEditor('edLeft', false);
+
+    // ===== DB schema rendering (RIGHT PANE) =====
+    const schemaPane = document.getElementById('schemaPane');
+
+    const typeOf = (v) => {
+      if (v === null) return 'null';
+      if (Array.isArray(v)) return 'array';
+      return typeof v; // object, number, string, boolean, undefined
+    };
+
+    // Flatten nested objects to dot paths (up to depth 3 to keep it readable)
+    function flatten(obj, prefix = '', depth = 0, maxDepth = 3, out = {}){
+      if (obj && typeof obj === 'object' && !Array.isArray(obj) && depth < maxDepth){
+        for (const k of Object.keys(obj)){
+          flatten(obj[k], prefix ? prefix + '.' + k : k, depth + 1, maxDepth, out);
+        }
+      } else {
+        out[prefix] = obj;
+      }
+      return out;
+    }
+
+    // Build schema map from array of rows (objects) or a single object
+    function buildSchema(input){
+      const rows = Array.isArray(input) ? input : [input];
+      const map = {}; // key -> { type:Set, example:any }
+
+      for (const row of rows){
+        if (row && typeof row === 'object'){
+          const flat = flatten(row);
+          for (const [k,v] of Object.entries(flat)){
+            const t = typeOf(v);
+            if (!map[k]) map[k] = { type:new Set(), example: undefined };
+            map[k].type.add(t);
+            // pick first non-undefined example
+            if (map[k].example === undefined && v !== undefined) map[k].example = v;
+          }
+        }
+      }
+      // turn to array with stable sort (field name asc)
+      return Object.keys(map).sort().map(key => {
+        const entry = map[key];
+        const types = Array.from(entry.type).sort().join(' | ');
+        let example = entry.example;
+        if (example && typeof example === 'object'){
+          // Pretty hint for objects/arrays
+          example = Array.isArray(example) ? '[array]' : '[object Object]';
+        }
+        return { field:key, type:types || 'unknown', example: example===undefined ? '' : String(example) };
+      });
+    }
+
+    function renderSchemaTable(schemaRows){
+      if (!schemaRows.length){
+        schemaPane.className = 'schema-empty';
+        schemaPane.textContent = 'Schema will appear here…';
+        return;
+      }
+      schemaPane.className = '';
+      const thead = `
+        <thead>
+          <tr>
+            <th style="width:46%">Field</th>
+            <th style="width:18%">Type</th>
+            <th>Example</th>
+          </tr>
+        </thead>`;
+      const rows = schemaRows.map(r=>`
+        <tr>
+          <td><code>${r.field}</code></td>
+          <td>${r.type}</td>
+          <td>${r.example}</td>
+        </tr>`).join('');
+      schemaPane.innerHTML = `<table class="schema-table">${thead}<tbody>${rows}</tbody></table>`;
+    }
+
+    function parseJSONSafe(text){
+      try { return JSON.parse(text); } catch { return null; }
+    }
+
+    // Debounced update on left editor changes
+    let tId;
+    leftEd.session.on('change', ()=>{
+      clearTimeout(tId);
+      tId = setTimeout(()=>{
+        const data = parseJSONSafe(leftEd.getValue().trim());
+        if (!data){ renderSchemaTable([]); return; }
+        const schema = buildSchema(data);
+        renderSchemaTable(schema);
+      }, 220);
+    });
+
+    // Theme toggle also flips Ace theme (right pane is pure HTML so no change needed)
+    document.getElementById('themeToggle')?.addEventListener('click',()=>{
+      const h=document.documentElement;
+      const next = h.getAttribute('data-theme')==='light'?'dark':'light';
+      h.setAttribute('data-theme', next);
+      const th = next==='dark' ? "ace/theme/monokai" : "ace/theme/textmate";
+      leftEd.setTheme(th);
+    });
+
+    // Toolbar actions (left)
+    document.getElementById('fileIn')?.addEventListener('change', e=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=> leftEd.session.setValue(String(r.result||""), -1); r.readAsText(f);
+    });
+    document.getElementById('dlLeft').onclick = ()=>{
+      const blob=new Blob([leftEd.getValue()||""],{type:"application/json"});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='input.json'; a.click(); URL.revokeObjectURL(a.href);
+    };
+    document.getElementById('copyLeft').onclick = ()=> navigator.clipboard.writeText(leftEd.getValue()||"");
+    document.getElementById('fsLeft').onclick = ()=> document.getElementById('edLeft').requestFullscreen?.();
+
+    // Toolbar placeholders
+    document.getElementById('historyBtn').onclick = ()=> alert('History coming soon.');
+    document.getElementById('saveBtn').onclick    = ()=>{
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      const blob=new Blob([leftEd.getValue()||""],{type:"application/json"});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`dbview-${ts}.json`; a.click(); URL.revokeObjectURL(a.href);
+    };
+
+    // Right toolbar (download schema as TSV)
+    document.getElementById('dlRight').onclick = ()=>{
+      const data = parseJSONSafe(leftEd.getValue().trim());
+      const schema = data ? buildSchema(data) : [];
+      const lines = [['Field','Type','Example'], ...schema.map(r=>[r.field, r.type, r.example])];
+      const tsv = lines.map(row => row.map(cell => String(cell).replace(/\t/g,'  ')).join('\t')).join('\n');
+      const blob=new Blob([tsv],{type:"text/tab-separated-values"});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='schema.tsv'; a.click(); URL.revokeObjectURL(a.href);
+    };
+    document.getElementById('fsRight').onclick = ()=> document.getElementById('schemaPane').requestFullscreen?.();
+
+    // Feedback
+    document.getElementById('feedbackForm')?.addEventListener('submit',(e)=>{
+      e.preventDefault(); alert('✅ Thanks for your feedback!'); e.target.reset();
+    });
+  </script>
+</body>
+</html>

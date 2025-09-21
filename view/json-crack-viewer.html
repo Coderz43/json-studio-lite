@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JSON Studio Lite — Crack View</title>
+  <meta name="description" content="Visual graph/flow view for JSON. JSON Studio Lite — Crack View." />
+  <link rel="icon" href="../assets/favicon.ico" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+
+  <!-- Base styles -->
+  <link rel="preload" href="../assets/styles.css" as="style">
+  <link rel="stylesheet" href="../assets/styles.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+
+  <!-- Ace Editor -->
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/mode-json.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-textmate.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-monokai.js"></script>
+
+  <style>
+    /* ===== Page theme vars (match Convert/Difference) ===== */
+    :root{
+      --pane-border:#d7dbe3;
+      --pane-toolbar:#e6e9ef;
+      --pane-bg:#ffffff;
+      --line-active:#fff4b3;
+      --btn-gradient: linear-gradient(90deg,#ff7e29,#3a8dff);
+      --btn-text:#fff;
+    }
+    html[data-theme="dark"]{
+      --pane-border:#1b2030;
+      --pane-toolbar:#1e2430;
+      --pane-bg:#141927;     /* your chosen dark pane */
+      --line-active:#23293a;
+      --btn-gradient: linear-gradient(90deg,#ff7e29,#3a8dff);
+      --btn-text:#fff;
+    }
+    .brand .logo-skeleton,
+.brand .brand-name { display:none; }
+
+.brand-logo{ height:32px; display:block }
+@media (min-width:1024px){ .brand-logo{ height:36px } }
+
+
+    /* Ace dark skin so editor blends with pane */
+    html[data-theme="dark"] .ace-monokai{
+      background-color:#141927 !important; color:#e6edf3 !important;
+    }
+    html[data-theme="dark"] .ace-monokai .ace_text-layer{ color:#e6edf3 !important; }
+    html[data-theme="dark"] .ace-monokai .ace_gutter{
+      background:#141927 !important; color:#8b93a6 !important; border-right:1px solid #1b2030 !important;
+    }
+    html[data-theme="dark"] .ace-monokai .ace_print-margin{ background:#141927 !important; }
+    html[data-theme="dark"] .ace-monokai .ace_cursor{ color:#e6edf3 !important; }
+    html[data-theme="dark"] .ace-monokai .ace_marker-layer .ace_selection{ background:#2b3550 !important; }
+
+    /* ===== Layout ===== */
+    .convert-grid{
+      display:grid;
+      grid-template-columns:1fr 220px 1fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    @media (max-width:980px){
+      .convert-grid{ grid-template-columns:1fr; }
+      .convert-center{ order:-1; }
+      .graph-shell{ height:420px; }
+    }
+
+    .pane{ background:transparent; border-radius:12px; }
+    .pane-toolbar{
+      background:var(--pane-toolbar);
+      border:1px solid var(--pane-border);
+      border-bottom:none; border-radius:12px 12px 0 0;
+      padding:8px; display:flex; gap:8px; align-items:center;
+    }
+    .toolbar-right{ margin-left:auto; }
+    .toolbar-btn{
+      background:#fff; border:1px solid var(--pane-border); color:inherit;
+      height:44px; padding:0 18px; min-width:118px; border-radius:12px; font-weight:700;
+      display:flex; align-items:center; gap:8px;
+    }
+    html[data-theme="dark"] .toolbar-btn{ background:#1b2030; }
+
+    .editor-shell{
+      border:1px solid var(--pane-border);
+      border-top:none; border-radius:0 0 12px 12px;
+      overflow:hidden; background:var(--pane-bg);
+    }
+    .ace-wrap{ position:relative; height:560px; width:100%; }
+    .ace_editor .ace_marker-layer .ace_active-line{ background:var(--line-active) !important; }
+
+    /* Center rail: 4 buttons only (active = gradient) */
+    .convert-center{
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      min-height:560px;
+    }
+   /* Rail buttons (Format / Crack View / DB View / Grid View) */
+.mode-btn{
+    width:210px; height:64px; border-radius:16px;
+    display:grid; place-items:center; font-weight:800; cursor:pointer; text-decoration:none;
+    border:1px solid var(--pane-border); background:#fff; color:inherit;
+    box-shadow:0 6px 18px rgba(0,0,0,.06);
+  }
+  html[data-theme="dark"] .mode-btn{ background:#1e2430; color:#e6edf3; }
+  .mode-btn.active{
+    background:var(--btn-gradient) !important; color:var(--btn-text) !important; border:none;
+    box-shadow:0 8px 28px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12);
+  }
+
+
+    .status{ text-align:center; font-weight:600; color:var(--muted); }
+
+    /* Graph shell (right) */
+    .graph-shell{
+      border:1px solid var(--pane-border);
+      border-top:none; border-radius:0 0 12px 12px;
+      overflow:auto; background:var(--pane-bg); height:560px;
+    }
+    .graph-inner{ min-width:900px; min-height:560px; }
+
+    /* Example section */
+    .examples{ margin:26px auto; max-width:1200px; }
+    .ex-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .example-pane{ border:1px solid var(--pane-border); border-radius:12px; overflow:hidden; background:var(--pane-bg); }
+    .example-shell{ height:360px; }
+    @media (max-width:980px){ .ex-grid{ grid-template-columns:1fr; } }
+
+    main{ margin-top:10px; }
+  </style>
+</head>
+<body>
+  <!-- ===== Header (kept) ===== -->
+  <header class="topbar">
+      <div class="brand">
+  <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+    <img src="../assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+  </a>
+</div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab active" href="json-format-viewer.html">View</a>
+      <a class="tab" href="../index.html">Convert</a>
+      <a class="tab" href="../json-diff-checker.html">Difference</a>
+      <a class="tab" href="../samples.html">Samples</a>
+    </nav>
+    <div class="actions">
+      <button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <!-- ===== Main: Left editor | center 4 buttons | right graph ===== -->
+  <main class="convert-grid">
+    <!-- Left: Input JSON editor -->
+    <section class="pane">
+      <header class="pane-toolbar">
+        <button id="btnUpload" class="toolbar-btn">⤴ Upload</button>
+        <input id="fileInput" type="file" hidden accept=".json,.txt,application/json" />
+        <button id="btnDownloadLeft" class="toolbar-btn">⬇ Download</button>
+        <button id="btnCopyLeft" class="toolbar-btn">📋 Copy</button>
+        <div class="toolbar-right">
+          <button id="btnFsLeft" class="toolbar-btn">⤢ Fullscreen</button>
+        </div>
+      </header>
+      <div class="editor-shell"><div id="editorLeft" class="ace-wrap"></div></div>
+    </section>
+
+    <!-- Center: EXACTLY 4 buttons; active = Crack View -->
+    <aside class="convert-center">
+      <a class="mode-btn" href="json-format-viewer.html">{ } Format</a>
+      <button id="btnCrack" class="mode-btn active">{ } Crack View</button>
+      <a class="mode-btn" href="json-db-viewer.html">DB View</a>
+      <a class="mode-btn" href="json-grid-viewer.html">Grid View</a>
+      <div id="status" class="status">Paste valid JSON on the left, then click “Crack View”.</div>
+    </aside>
+
+    <!-- Right: Graph -->
+    <section class="pane">
+      <header class="pane-toolbar">
+        <button id="btnDownloadSvg" class="toolbar-btn">⬇ Download</button>
+        <button id="btnDirections" class="toolbar-btn">🧭 Directions</button>
+        <button id="btnSettings" class="toolbar-btn">⚙️ Settings</button>
+        <div class="toolbar-right">
+          <button id="btnFsRight" class="toolbar-btn">⤢ Fullscreen</button>
+        </div>
+      </header>
+      <div class="graph-shell" id="graphShell">
+        <svg id="graphSvg" class="graph-inner" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Example (new dataset) ===== -->
+  <section class="examples">
+    <h2 style="margin:0 0 10px 2px; font-size:22px; font-weight:800;">Crack View Example: Bookstore</h2>
+    <p style="margin:0 0 14px 2px; color:var(--muted)">Quick demo JSON and its generated tree.</p>
+    <div class="ex-grid">
+      <div class="example-pane">
+        <div id="exEditor" class="example-shell"></div>
+      </div>
+      <div class="example-pane">
+        <div class="graph-shell" style="height:360px;">
+          <svg id="exampleSvg" class="graph-inner" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Feedback (kept) ===== -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field">
+        <input type="text" id="fbName" required>
+        <label for="fbName">Your Name</label>
+      </div>
+      <div class="field">
+        <input type="email" id="fbEmail" required>
+        <label for="fbEmail">Your Email</label>
+      </div>
+      <div class="field">
+        <textarea id="fbMessage" rows="4" required></textarea>
+        <label for="fbMessage">Your Message</label>
+      </div>
+      <button type="submit" class="btn gradient">Submit</button>
+    </form>
+  </section>
+
+  <!-- ===== Footer (kept) ===== -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h3>⚡ JSON Studio Lite</h3>
+        <p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p>
+      </div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="json-format-viewer.html">View</a></li>
+          <li><a href="../index.html">Convert</a></li>
+          <li><a href="../json-diff-checker.html">Difference</a></li>
+          <li><a href="../samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="../assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="../assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="../assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© <span id="year"></span> JSON Studio Lite.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ===== Footer year + theme toggle + feedback =====
+    const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear();
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      const h = document.documentElement;
+      const next = h.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      h.setAttribute('data-theme', next);
+      const t = next === 'dark' ? "ace/theme/monokai" : "ace/theme/textmate";
+      leftEd.setTheme(t); exEd.setTheme(t);
+    });
+    document.getElementById('feedbackForm')?.addEventListener('submit',(e)=>{e.preventDefault();alert('✅ Thanks for your feedback!');e.target.reset();});
+
+    // ===== Ace editors =====
+    function mkEditor(id, theme){
+      const ed = ace.edit(id);
+      ed.session.setMode("ace/mode/json");
+      ed.setTheme(theme);
+      ed.setOptions({
+        showGutter:true, highlightActiveLine:true,
+        showPrintMargin:true, printMargin:100,
+        fontSize:"14px", tabSize:2, useSoftTabs:true, wrap:false
+      });
+      return ed;
+    }
+    const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark'
+      ? "ace/theme/monokai" : "ace/theme/textmate";
+
+    // LEFT editor (starts empty)
+    const leftEd = mkEditor('editorLeft', currentTheme);
+    leftEd.session.setValue('', -1);
+
+    // Example editor
+    const exEd = mkEditor('exEditor', currentTheme);
+    const demoJson = `{
+  "store": {
+    "name": "PageTurner Books",
+    "city": "Austin",
+    "inventory": {
+      "books": [
+        { "id": "bk101", "title": "Deep Space", "author": "M. Vega", "price": 19.5 },
+        { "id": "bk102", "title": "Rust Recipes", "author": "A. Chen", "price": 32.0 }
+      ],
+      "magazines": [
+        { "title": "Tech Monthly", "issue": 142 },
+        { "title": "Art & Code", "issue": 58 }
+      ]
+    },
+    "open": true
+  }
+}`;
+    exEd.session.setValue(demoJson, -1);
+
+    // ===== Toolbar actions (left) =====
+    const fileInput = document.getElementById('fileInput');
+    document.getElementById('btnUpload').onclick = () => fileInput.click();
+    fileInput.addEventListener('change', (e) => {
+      const f = e.target.files?.[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => leftEd.setValue(String(r.result||""), -1);
+      r.readAsText(f);
+    });
+    function dl(name, content, type='application/json'){
+      const blob = new Blob([content], {type});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    }
+    document.getElementById('btnDownloadLeft').onclick = () => dl('input.json', leftEd.getValue());
+    document.getElementById('btnCopyLeft').onclick = () => navigator.clipboard.writeText(leftEd.getValue()||'');
+    document.getElementById('btnFsLeft').onclick = () => document.getElementById('editorLeft').requestFullscreen?.();
+
+    // ===== Lightweight JSON -> SVG tree renderer =====
+    const statusEl = document.getElementById('status');
+    const svg = document.getElementById('graphSvg');
+    const exSvg = document.getElementById('exampleSvg');
+
+    const NODE_W = 180, NODE_H = 44, H_GAP = 120, V_GAP = 20, RADIUS = 10;
+
+    function clearSvg(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+    function parseSafe(txt){ try{ return JSON.parse(txt); }catch{ return null; } }
+
+    function drawNode(el, x, y, label){
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', NODE_W); rect.setAttribute('height', NODE_H);
+      rect.setAttribute('rx', RADIUS); rect.setAttribute('fill', 'white');
+      rect.setAttribute('stroke', '#cbd5e1'); rect.setAttribute('stroke-width', '1.25');
+      g.appendChild(rect);
+
+      const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+      text.setAttribute('x', x + 12); text.setAttribute('y', y + 26);
+      text.setAttribute('font-size', '14'); text.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+      text.setAttribute('fill', '#0f172a');
+      text.textContent = label;
+      g.appendChild(text);
+
+      el.appendChild(g);
+      return {x, y};
+    }
+    function drawEdge(el,x1,y1,x2,y2){
+      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+      const mx = (x1 + x2) / 2;
+      const d = `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', '#94a3b8');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-width', '1.5');
+      el.appendChild(path);
+    }
+    function childrenOf(val){
+      if (Array.isArray(val)) return val.map((v,i)=>[`[${i}]`, v]);
+      if (val && typeof val === 'object') return Object.keys(val).map(k=>[k, val[k]]);
+      return [];
+    }
+    function leafText(v){ return typeof v==='string' ? `"${v}"` : String(v); }
+
+    function layoutTree(el, rootVal){
+      const layers = [];
+      function ensure(d){ if(!layers[d]) layers[d]=[]; }
+      function add(d, label, val){ ensure(d); layers[d].push({label, val}); }
+
+      (function dfs(val, d, label){
+        add(d, label, val);
+        const ch = childrenOf(val);
+        ch.forEach(([k,v])=> dfs(v, d+1, typeof v==='object' ? k : `${k}: ${leafText(v)}`));
+      })(rootVal, 0, 'root');
+
+      clearSvg(el);
+      let maxW = 0, curY = 20;
+      layers.forEach((nodes, depth) => {
+        let y = 20;
+        nodes.forEach((n) => {
+          n.pos = drawNode(el, 20 + depth*(NODE_W+H_GAP), y, n.label);
+          y += NODE_H + V_GAP;
+        });
+        curY = Math.max(curY, y);
+        maxW = Math.max(maxW, 20 + depth*(NODE_W+H_GAP) + NODE_W + 40);
+      });
+
+      (function link(val, d){
+        const idx = layers[d].findIndex(n => n.visited !== true && n.val === val);
+        const node = layers[d][idx]; node.visited = true;
+        const fromX = node.pos.x + NODE_W;
+        const fromY = node.pos.y + NODE_H/2;
+        const ch = childrenOf(val);
+        ch.forEach(([k,v])=>{
+          const L = layers[d+1]||[];
+          const ci = L.findIndex(n => n.visited !== true && n.val === v);
+          if (ci > -1){
+            const child = L[ci];
+            const toX = child.pos.x;
+            const toY = child.pos.y + NODE_H/2;
+            drawEdge(el, fromX, fromY, toX, toY);
+            link(v, d+1);
+          }
+        });
+      })(rootVal, 0);
+
+      el.setAttribute('width', Math.max(maxW, 900));
+      el.setAttribute('height', Math.max(curY+20, el === svg ? 560 : 360));
+      layers.flat().forEach(n=> delete n.visited);
+    }
+
+    // Run Crack on center button
+    function runCrack(){
+      const obj = parseSafe(leftEd.getValue().trim());
+      if (!obj){ statusEl.textContent = '❗ Paste valid JSON on the left.'; return; }
+      statusEl.textContent = 'Rendering…';
+      layoutTree(svg, obj);
+      statusEl.textContent = 'Graph ready.';
+    }
+    document.getElementById('btnCrack').addEventListener('click', runCrack);
+
+    // Right toolbar
+    document.getElementById('btnDownloadSvg').onclick = () => {
+      const src = new XMLSerializer().serializeToString(svg);
+      dl('graph.svg', src, 'image/svg+xml');
+    };
+    document.getElementById('btnFsRight').onclick = () => document.getElementById('graphShell').requestFullscreen?.();
+    document.getElementById('btnDirections').onclick = () =>
+      alert('Use the scrollbars to pan. Edit left JSON, then press “Crack View” again to refresh.');
+    document.getElementById('btnSettings').onclick = () =>
+      alert('Demo settings placeholder. You can add node color/spacing controls later.');
+
+    // Render the example automatically
+    (function renderExample(){
+      const val = parseSafe(demoJson);
+      if (val) layoutTree(exSvg, val);
+    })();
+  </script>
+</body>
+</html>

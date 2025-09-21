@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JSON Studio Lite – Convert</title>
+  <meta name="description" content="Fast, private, in-browser converters: Text ↔ JSON, CSV → JSON, JSON → XML/YAML." />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="manifest" href="manifest.webmanifest" />
+
+  <!-- Styles -->
+  <link rel="preload" href="assets/styles.css" as="style">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="styles/theme.css">
+
+<style>
+  /* ===== Page-local theme vars ===== */
+  :root{
+    --line-active:#fff4b3;
+    --line-diff:#b7f3de;
+    --token-del:#ffd9d9;
+    --token-add:#c8f5e6;
+    --pane-border:#d7dbe3;
+    --pane-toolbar:#e6e9ef;
+    --pane-bg:#ffffff;
+
+    --btn-gradient:linear-gradient(90deg,#ff7e29,#3a8dff);
+    --btn-text:#fff;
+
+    /* default (light) mode-pill colors for unselected pills */
+    --mode-pill-bg:#ffffff;
+    --mode-pill-fg:#111827;
+  }
+
+  /* --- Dark mode (match Difference page) --- */
+  html[data-theme="dark"]{
+    --pane-border:#1b2030;
+    --pane-toolbar:#1e2430;
+    --pane-bg:#141927;
+    --line-active:#23293a;
+    --line-diff:#223a32;
+    --token-del:#3a2628;
+    --token-add:#1f3a31;
+
+    /* unselected pills in dark */
+    --mode-pill-bg:#141927;
+    --mode-pill-fg:#e6edf3;
+  }
+  /* brand logo swap — keep everything else as-is */
+.brand .logo-skeleton,
+.brand .brand-name { display:none; }
+
+.brand-logo{ height:32px; display:block }
+@media (min-width:1024px){ .brand-logo{ height:36px } }
+
+
+  /* Ace (dark) overrides so editor matches panes */
+  html[data-theme="dark"] .ace-monokai{ background-color:#141927 !important; color:#e6edf3 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_text-layer{ color:#e6edf3 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_gutter{
+    background:#141927 !important; color:#8b93a6 !important; border-right:1px solid #1b2030 !important;
+  }
+  html[data-theme="dark"] .ace-monokai .ace_print-margin{ background:#141927 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_cursor{ color:#e6edf3 !important; }
+  html[data-theme="dark"] .ace-monokai .ace_marker-layer .ace_selection{ background:#2b3550 !important; }
+
+  /* ===== Layout ===== */
+  .mode-selector{ display:flex; gap:14px; justify-content:center; padding:12px 8px 20px; }
+
+  /* Mode pills:
+     - Neutral by default (light: white, dark: #141927)
+     - Only .active gets the gradient like Convert */
+  .mode-btn{
+    padding:14px 20px;
+    border-radius:28px;
+    border:1px solid var(--pane-border);
+    background:var(--mode-pill-bg);
+    color:var(--mode-pill-fg);
+    font-weight:800;
+    box-shadow:0 8px 28px rgba(0,0,0,.06);
+    cursor:pointer;
+    transition:filter .15s ease, transform .05s ease, background-color .15s ease;
+  }
+  .mode-btn:hover{ filter:brightness(1.02); }
+  .mode-btn:active{ transform:translateY(1px); }
+
+  .mode-btn.active{
+    background:var(--btn-gradient);
+    color:#fff;
+    border-color:transparent;
+    box-shadow:0 10px 30px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+
+  /* Three-column grid; make all columns equal height */
+  .convert-grid{
+    display:grid;
+    grid-template-columns:1fr 220px 1fr;
+    gap:16px;
+    align-items:stretch; /* stretch rows to same height */
+  }
+  /* Center Convert vertically in the middle column */
+  .convert-center{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;  /* ⬅ center vertically */
+    gap:12px;
+    min-height:560px;        /* match .ace-wrap height */
+    padding-top:0;
+  }
+
+  .pane{ background:transparent; border-radius:12px; }
+  .pane-toolbar{
+    background:var(--pane-toolbar);
+    border:1px solid var(--pane-border);
+    border-bottom:none; border-radius:12px 12px 0 0;
+    padding:8px; display:flex; gap:8px; align-items:center;
+  }
+  .toolbar-right{ margin-left:auto; }
+
+  /* ⬇ Revert primary toolbar buttons to neutral (no gradient) */
+  .pane-toolbar .btn:not(.ghost){
+    background:var(--mode-pill-bg);
+    color:var(--mode-pill-fg);
+    border:1px solid var(--pane-border);
+    box-shadow:0 6px 18px rgba(0,0,0,.06);
+  }
+  .pane-toolbar .btn:not(.ghost):hover{ filter:brightness(1.02); }
+
+  .editor-shell{
+    border:1px solid var(--pane-border);
+    border-top:none; border-radius:0 0 12px 12px;
+    overflow:hidden; background:var(--pane-bg);
+  }
+  .ace-wrap{ position:relative; height:560px; width:100%; }
+
+  @media (max-width:980px){
+    .convert-grid{ grid-template-columns:1fr; }
+    .convert-center{ order:-1; min-height:auto; }
+    .ace-wrap{ height:420px; }
+  }
+
+  /* Convert gradient button (matches active mode pill) */
+  .convert-btn{
+    display:grid; place-items:center; gap:4px; width:220px; height:86px; border-radius:18px;
+    background:var(--btn-gradient); color:var(--btn-text); font-weight:800; border:none; cursor:pointer;
+    box-shadow:0 8px 28px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .convert-btn .brace{ font-size:26px; }
+  .convert-btn .label{ font-size:18px; }
+  .convert-btn .hint{ opacity:.9 }
+
+  /* Status text + active line */
+  .status{ min-height:20px; font-weight:600; color:var(--muted); text-align:center; }
+  .ace_editor .ace_marker-layer .ace_active-line{ background:var(--line-active) !important; }
+
+  /* Examples block */
+  .examples{ margin:24px auto; max-width:1080px; }
+  .examples h2{ font-size:22px; font-weight:800; margin:0 0 8px; }
+  .examples h3{ font-size:18px; font-weight:700; margin:8px 0 12px; }
+  .example-pane{ border:1px solid var(--pane-border); border-radius:12px; overflow:hidden; background:var(--pane-bg); }
+  .example-title{ font-weight:700; margin:.5rem 0 .5rem; }
+  .example-shell{ height:420px; }
+  .ex-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:980px){ .ex-grid{ grid-template-columns:1fr; } }
+
+  /* Utility: gradient button if needed elsewhere */
+  .btn.gradient{ background:var(--btn-gradient); color:#fff; }
+</style>
+
+
+</head>
+<body>
+  <!-- ===== Top Bar / Navbar ===== -->
+  <header class="topbar">
+    <div class="brand">
+  <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+    <img src="assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+  </a>
+</div>
+    <nav class="tabs" aria-label="Primary">
+      <a class="tab" href="view/json-format-viewer.html">View</a>
+      <a class="tab active" href="index.html" aria-current="page">Convert</a>
+      <a class="tab" href="json-diff-checker.html">Difference</a>
+      <a class="tab" href="samples.html">Samples</a>
+    </nav>
+
+    <div class="actions">
+      <button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <!-- ===== Mode Selector ===== -->
+  <section class="mode-selector" aria-label="Converter mode">
+    <button class="mode-btn active" data-mode="text-json">TEXT → JSON</button>
+    <button class="mode-btn" data-mode="csv-json">CSV → JSON</button>
+    <button class="mode-btn" data-mode="json-text">JSON → TEXT</button>
+    <button class="mode-btn" data-mode="json-xml">JSON → XML</button>
+    <button class="mode-btn" data-mode="json-yaml">JSON → YAML</button>
+  </section>
+
+  <!-- ===== Editors Row ===== -->
+  <main class="convert-grid">
+    <!-- Left Pane = INPUT -->
+    <section class="pane">
+      <header class="pane-toolbar" aria-label="Input tools">
+        <label class="btn" for="fileInput">
+          <input id="fileInput" type="file" accept=".txt,.csv,.tsv,.json,text/plain,text/csv,application/json" hidden>
+          ⤴ Upload
+        </label>
+        <button id="btnHistory" class="btn ghost">🕘 History</button>
+        <button id="btnClearInput" class="btn ghost">✖ Clear</button>
+        <button id="btnCopyInput" class="btn ghost">📋 Copy</button>
+        <div class="toolbar-right">
+          <button id="btnInputFullscreen" class="btn ghost" title="Fullscreen input">⤢</button>
+        </div>
+      </header>
+      <div class="editor-shell"><div id="edIn" class="ace-wrap"></div></div>
+    </section>
+
+    <!-- Center -->
+    <aside class="convert-center">
+      <button id="btnConvert" class="convert-btn" title="Convert (Ctrl/⌘ + Enter)">
+        <div class="brace">{ }</div>
+        <div class="label">Convert</div>
+        <small class="hint">Ctrl/⌘ + Enter</small>
+      </button>
+      <div id="textOptions" class="inline-options" hidden>
+        <label class="opt">
+          <span>Delimiter</span>
+          <select id="delimiterSelect">
+            <option value="auto" selected>Auto</option>
+            <option value=",">Comma ,</option>
+            <option value="|">Pipe |</option>
+            <option value="\t">Tab ↹</option>
+            <option value=";">Semicolon ;</option>
+          </select>
+        </label>
+        <label class="opt">
+          <span>Mode</span>
+          <select id="textModeSelect">
+            <option value="auto" selected>Auto detect</option>
+            <option value="kv">Key–Value</option>
+            <option value="list">List</option>
+            <option value="table">Table</option>
+          </select>
+        </label>
+      </div>
+      <div id="statusBar" class="status" role="status" aria-live="polite"></div>
+    </aside>
+
+    <!-- Right Pane = OUTPUT -->
+    <section class="pane">
+      <header class="pane-toolbar" aria-label="Output tools">
+        <button id="btnDownload" class="btn">⬇ Download</button>
+        <button id="btnCopyOutput" class="btn ghost">📋 Copy</button>
+        <button id="btnPretty" class="btn ghost" data-state="pretty">{} Pretty</button>
+        <button id="btnMinify" class="btn ghost">{…} Minify</button>
+        <div class="toolbar-right">
+          <button id="btnOutputFullscreen" class="btn ghost" title="Fullscreen output">⤢</button>
+        </div>
+      </header>
+      <div class="editor-shell"><div id="edOut" class="ace-wrap"></div></div>
+    </section>
+  </main>
+
+  <!-- ===== History Modal ===== -->
+  <dialog id="historyModal" class="modal">
+    <form method="dialog" class="modal-card">
+      <header class="modal-head">
+        <h3>Conversion History</h3>
+        <button class="btn ghost" value="close" aria-label="Close">✖</button>
+      </header>
+      <div id="historyList" class="modal-body"></div>
+      <footer class="modal-foot">
+        <button id="btnClearHistory" class="btn danger">Clear All</button>
+        <button class="btn" value="close">Close</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ===== Toast ===== -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- ===== Examples (switch with mode) ===== -->
+  <section class="examples" id="examples">
+    <h2 id="exTitle">TEXT to JSON Converter</h2>
+    <h3>How does JSON STUDIO LITE help you?</h3>
+    <p style="max-width:920px">Generate clean, structured JSON from plain input; pretty-printed with line numbers for easy copy and testing. Works fully in your browser.</p>
+
+    <h3 id="exSubTitle">TEXT to JSON Conversion Example:</h3>
+    <div class="ex-grid">
+      <div class="example-pane">
+        <div style="padding:10px 12px;"><div class="example-title" id="exLeftTitle">Text Input</div></div>
+        <div class="example-shell"><div id="exLeft" class="ace-wrap"></div></div>
+      </div>
+      <div class="example-pane">
+        <div style="padding:10px 12px;"><div class="example-title" id="exRightTitle">JSON Output</div></div>
+        <div class="example-shell"><div id="exRight" class="ace-wrap"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Feedback ===== -->
+  <section class="feedback-section" id="feedback">
+    <h2>💬 We value your Feedback</h2>
+    <form id="feedbackForm" class="feedback-form">
+      <div class="field"><input type="text" id="fbName" required><label for="fbName">Your Name</label></div>
+      <div class="field"><input type="email" id="fbEmail" required><label for="fbEmail">Your Email</label></div>
+      <div class="field"><textarea id="fbMessage" rows="4" required></textarea><label for="fbMessage">Your Message</label></div>
+      <button type="submit" class="btn gradient">Submit Feedback</button>
+    </form>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h3>⚡ JSON Studio Lite</h3>
+        <p>Simple, fast, offline-ready JSON tools. Built with ❤️ for developers.</p>
+      </div>
+      <div class="footer-center">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="view/json-format-viewer.html">View</a></li>
+          <li><a href="index.html">Convert</a></li>
+          <li><a href="json-diff-checker.html">Difference</a></li>
+          <li><a href="samples.html">Samples</a></li>
+        </ul>
+      </div>
+      <div class="footer-right">
+        <h4>Connect</h4>
+        <div class="social">
+          <a aria-label="Twitter" href="#"><img src="assets/icons/twitter.svg" alt="Twitter"></a>
+          <a aria-label="LinkedIn" href="#"><img src="assets/icons/linkedin.svg" alt="LinkedIn"></a>
+          <a aria-label="GitHub" href="#"><img src="assets/icons/github.svg" alt="GitHub"></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© <span id="year"></span> JSON Studio Lite.</p></div>
+  </footer>
+
+  <!-- ===== Ace Editor ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/ext-language_tools.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/mode-json.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/mode-text.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/mode-xml.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-textmate.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/theme-monokai.js"></script>
+
+  <script>
+    // ===== Utilities =====
+    const Range = ace.require('ace/range').Range;
+    const root = document.documentElement;
+    const isDark = () => root.getAttribute('data-theme') === 'dark';
+    const aceTheme = () => isDark() ? "ace/theme/monokai" : "ace/theme/textmate";
+
+    function makeEditor(el, mode="ace/mode/json", readOnly=false){
+      const ed = ace.edit(el);
+      ed.session.setMode(mode);
+      ed.setTheme(aceTheme());
+      ed.setOptions({
+        readOnly,
+        showGutter: true,
+        highlightActiveLine: true,
+        showPrintMargin: true,
+        printMargin: 100,
+        fontSize: "14px",
+        tabSize: 2,
+        useSoftTabs: true,
+        wrap: false
+      });
+      return ed;
+    }
+
+    // Main editors
+    const edIn  = makeEditor("edIn",  "ace/mode/text");
+    const edOut = makeEditor("edOut", "ace/mode/json");
+
+    // Example editors (read-only)
+    const exLeft  = makeEditor("exLeft",  "ace/mode/text", true);
+    const exRight = makeEditor("exRight", "ace/mode/json", true);
+
+    // Theme toggle
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      root.setAttribute('data-theme', isDark() ? 'light' : 'dark');
+      [edIn, edOut, exLeft, exRight].forEach(ed => ed.setTheme(aceTheme()));
+    });
+
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ===== Mode handling & examples =====
+    const modes = {
+      "text-json": {
+        title:"TEXT to JSON Converter",
+        sub:  "TEXT to JSON Conversion Example:",
+        leftTitle:"Text Input",
+        rightTitle:"JSON Output",
+        left: `A startup named NimbusAI operates in Austin.
+It has 5 products and 3 active plans (free, pro, enterprise).
+The owner is Alice Nguyen; support email is support@nimbus.ai.`,
+        right: JSON.stringify({
+          company:{ name:"NimbusAI", location:"Austin",
+            owner:"Alice Nguyen", contact:{ support_email:"support@nimbus.ai" }},
+          stats:{ products:5, plans:["free","pro","enterprise"] }
+        }, null, 2),
+        inputMode:"ace/mode/text",
+        outputMode:"ace/mode/json"
+      },
+      "csv-json": {
+        title:"CSV to JSON Converter",
+        sub:  "CSV to JSON Conversion Example:",
+        leftTitle:"CSV Input",
+        rightTitle:"JSON Output",
+        left:`id,name,price
+1001,keyboard,49.99
+1002,mouse,29.50
+1003,monitor,199.00`,
+        right: JSON.stringify([
+          {id:"1001", name:"keyboard", price:"49.99"},
+          {id:"1002", name:"mouse",    price:"29.50"},
+          {id:"1003", name:"monitor",  price:"199.00"}
+        ], null, 2),
+        inputMode:"ace/mode/text",
+        outputMode:"ace/mode/json"
+      },
+      "json-text": {
+        title:"JSON to TEXT Converter",
+        sub:  "JSON to TEXT Conversion Example:",
+        leftTitle:"JSON Input",
+        rightTitle:"Text Output",
+        left: JSON.stringify({user:{id:1,name:"Zara"},active:true,roles:["admin","editor"]}, null, 2),
+        right:`user.id = 1
+user.name = Zara
+active = true
+roles[0] = admin
+roles[1] = editor`,
+        inputMode:"ace/mode/json",
+        outputMode:"ace/mode/text"
+      },
+      "json-xml": {
+        title:"JSON to XML Converter",
+        sub:  "JSON to XML Conversion Example:",
+        leftTitle:"JSON Input",
+        rightTitle:"XML Output",
+        left: JSON.stringify({product:{id:42,name:"Lamp",price:19.99,tags:["home","light"]}}, null, 2),
+        right:`<product>
+  <id>42</id>
+  <name>Lamp</name>
+  <price>19.99</price>
+  <tags>
+    <item>home</item>
+    <item>light</item>
+  </tags>
+</product>`,
+        inputMode:"ace/mode/json",
+        outputMode:"ace/mode/xml"
+      },
+      "json-yaml": {
+        title:"JSON to YAML Converter",
+        sub:  "JSON to YAML Conversion Example:",
+        leftTitle:"JSON Input",
+        rightTitle:"YAML Output",
+        left: JSON.stringify({site:{name:"Demo",lang:"en"},features:["fast","local"],active:true}, null, 2),
+        right:`site:
+  name: Demo
+  lang: en
+features:
+  - fast
+  - local
+active: true`,
+        inputMode:"ace/mode/json",
+        outputMode:"ace/mode/text"
+      }
+    };
+
+    const exTitle = document.getElementById('exTitle');
+    const exSub   = document.getElementById('exSubTitle');
+    const exLT    = document.getElementById('exLeftTitle');
+    const exRT    = document.getElementById('exRightTitle');
+
+    function applyExample(key){
+      const m = modes[key];
+      exTitle.textContent = m.title;
+      exSub.textContent   = m.sub;
+      exLT.textContent    = m.leftTitle;
+      exRT.textContent    = m.rightTitle;
+
+      exLeft.session.setMode(m.inputMode);
+      exRight.session.setMode(m.outputMode);
+      exLeft.setValue(m.left, -1);
+      exRight.setValue(m.right, -1);
+
+      // also switch main editors’ modes sensibly
+      edIn.session.setMode(m.inputMode);
+      edOut.session.setMode(m.outputMode);
+
+      // show TEXT options only for text-json
+      document.getElementById('textOptions').hidden = (key !== 'text-json');
+    }
+    // default example
+    applyExample("text-json");
+
+    // Mode buttons
+    document.querySelectorAll('.mode-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        applyExample(btn.dataset.mode);
+      });
+    });
+
+    // ===== Converters =====
+    function csvToJson(csv, delimAuto='auto'){
+      if (!csv.trim()) return [];
+      const lines = csv.replace(/\r\n?/g, '\n').split('\n').filter(l=>l.length);
+      // detect delimiter
+      const d = (delimAuto==='auto')
+        ? ([',',';','\t','|'].sort((a,b)=>csv.split(b).length - csv.split(a).length)[0])
+        : delimAuto;
+      const head = lines[0].split(d).map(s=>s.trim());
+      return lines.slice(1).map(row=>{
+        const cols = row.split(d);
+        const obj = {};
+        head.forEach((h,i)=>obj[h]= (cols[i]??'').trim());
+        return obj;
+      });
+    }
+    function jsonToText(obj, path=""){
+      if (Array.isArray(obj)) {
+        return obj.map((v,i)=>jsonToText(v, `${path}[${i}]`)).join("\n");
+      } else if (obj && typeof obj === 'object') {
+        return Object.keys(obj).map(k=>jsonToText(obj[k], path ? `${path}.${k}` : k)).join("\n");
+      } else {
+        return `${path} = ${String(obj)}`;
+      }
+    }
+    function jsonToXml(obj, tag="root"){
+      if (Array.isArray(obj)) {
+        return `<${tag}>` + obj.map(v=>jsonToXml(v,"item")).join("") + `</${tag}>`;
+      } else if (obj && typeof obj === 'object') {
+        const inner = Object.entries(obj).map(([k,v])=>jsonToXml(v,k)).join("");
+        return `<${tag}>${inner}</${tag}>`;
+      } else {
+        return `<${tag}>${String(obj)}</${tag}>`;
+      }
+    }
+    function jsonToYaml(obj, indent=0){
+      const sp = '  '.repeat(indent);
+      if (Array.isArray(obj)) {
+        return obj.map(v=>`${sp}- ${typeof v==='object' ? '\n'+jsonToYaml(v, indent+1) : v}`).join('\n');
+      } else if (obj && typeof obj === 'object') {
+        return Object.entries(obj).map(([k,v])=>{
+          if (typeof v==='object') return `${sp}${k}:\n${jsonToYaml(v, indent+1)}`;
+          return `${sp}${k}: ${v}`;
+        }).join('\n');
+      } else {
+        return `${sp}${obj}`;
+      }
+    }
+
+    function convert(){
+      const modeKey = document.querySelector('.mode-btn.active').dataset.mode;
+      const src = edIn.getValue();
+      try{
+        let out="";
+        if (modeKey==="text-json"){
+          // quick heuristics: kv / list / table
+          const lines = src.replace(/\r\n?/g,'\n').split('\n').filter(Boolean);
+          if (!lines.length) out = "[]";
+          else if (lines.some(l=>l.includes(':'))){ // kv
+            const obj={}; lines.forEach(l=>{ const m=l.split(':'); if(m[0]) obj[m[0].trim()]= (m.slice(1).join(':')).trim(); });
+            out = JSON.stringify(obj, null, 2);
+          } else if (lines[0].includes(',') || lines[0].includes('\t') || lines[0].includes('|') || lines[0].includes(';')){ // table
+            out = JSON.stringify(csvToJson(lines.join('\n')), null, 2);
+          } else { // list
+            out = JSON.stringify(lines, null, 2);
+          }
+        } else if (modeKey==="csv-json"){
+          const delim = document.getElementById('delimiterSelect').value;
+          out = JSON.stringify(csvToJson(src, delim), null, 2);
+        } else if (modeKey==="json-text"){
+          const obj = JSON.parse(src);
+          out = jsonToText(obj);
+          edOut.session.setMode("ace/mode/text");
+        } else if (modeKey==="json-xml"){
+          const obj = JSON.parse(src);
+          out = jsonToXml(obj, "root");
+          edOut.session.setMode("ace/mode/xml");
+        } else if (modeKey==="json-yaml"){
+          const obj = JSON.parse(src);
+          out = jsonToYaml(obj);
+          edOut.session.setMode("ace/mode/text");
+        }
+        edOut.setValue(out, -1);
+        document.getElementById('statusBar').textContent = "Done.";
+        pushHistory(modeKey, src, out);
+      }catch(err){
+        document.getElementById('statusBar').textContent = "⚠️ " + err.message;
+      }
+    }
+    document.getElementById('btnConvert').addEventListener('click', convert);
+    document.addEventListener('keydown', e=>{
+      if ((e.ctrlKey||e.metaKey) && e.key==='Enter') convert();
+    });
+
+    // Show TEXT options only when text-json
+    document.getElementById('textOptions').hidden = false;
+
+    // ===== Toolbar actions =====
+    document.getElementById('btnClearInput').onclick = ()=> edIn.setValue("", -1);
+    document.getElementById('btnCopyInput').onclick  = ()=> navigator.clipboard.writeText(edIn.getValue());
+    document.getElementById('btnCopyOutput').onclick = ()=> navigator.clipboard.writeText(edOut.getValue());
+    document.getElementById('btnPretty').onclick = ()=> {
+      try{ edOut.setValue(JSON.stringify(JSON.parse(edOut.getValue()), null, 2), -1); }catch{}
+    };
+    document.getElementById('btnMinify').onclick = ()=> {
+      try{ edOut.setValue(JSON.stringify(JSON.parse(edOut.getValue())), -1); }catch{}
+    };
+    document.getElementById('btnDownload').onclick = ()=>{
+      const blob = new Blob([edOut.getValue()||""], {type:"application/json"});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="output.json"; a.click(); URL.revokeObjectURL(a.href);
+    };
+    document.getElementById('btnInputFullscreen').onclick  = ()=> document.getElementById('edIn').requestFullscreen?.();
+    document.getElementById('btnOutputFullscreen').onclick = ()=> document.getElementById('edOut').requestFullscreen?.();
+
+    // Upload into input
+    document.getElementById('fileInput').addEventListener('change', (e)=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      const r=new FileReader(); r.onload=()=> edIn.setValue(String(r.result||""), -1); r.readAsText(f);
+    });
+
+    // ===== History (simple localStorage) =====
+    const HKEY = "jsl_history_v1";
+    function getHistory(){ try{ return JSON.parse(localStorage.getItem(HKEY)||"[]"); }catch{ return []; } }
+    function pushHistory(mode, input, output){
+      const h = getHistory();
+      h.unshift({ts:Date.now(), mode, input, output});
+      localStorage.setItem(HKEY, JSON.stringify(h.slice(0,50)));
+    }
+    function renderHistory(){
+      const list = getHistory();
+      const wrap = document.getElementById('historyList');
+      wrap.innerHTML = list.length ? "" : "<p>No history yet.</p>";
+      list.forEach((it,i)=>{
+        const div = document.createElement('div');
+        const when = new Date(it.ts).toLocaleString();
+        div.className = "history-item";
+        div.style.cssText = "border:1px solid var(--pane-border); border-radius:10px; padding:10px; margin:8px 0; background:var(--pane-bg);";
+        div.innerHTML = `<strong>${i+1}. ${it.mode}</strong> <em style="opacity:.7">(${when})</em>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
+            <pre style="margin:0; white-space:pre-wrap; max-height:160px; overflow:auto">${(it.input||"").replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
+            <pre style="margin:0; white-space:pre-wrap; max-height:160px; overflow:auto">${(it.output||"").replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
+          </div>`;
+        wrap.appendChild(div);
+      });
+    }
+    document.getElementById('btnHistory').onclick = ()=>{
+      renderHistory();
+      document.getElementById('historyModal').showModal();
+    };
+    document.getElementById('btnClearHistory').onclick = (e)=>{
+      e.preventDefault(); localStorage.removeItem(HKEY); renderHistory();
+    };
+
+    // Feedback
+    document.getElementById('feedbackForm')?.addEventListener('submit', (e)=>{
+      e.preventDefault(); alert('✅ Thanks for your feedback!'); e.target.reset();
+    });
+  </script>
+</body>
+</html>
