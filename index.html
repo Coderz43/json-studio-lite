@@ -166,6 +166,20 @@
 
   /* Utility: gradient button if needed elsewhere */
   .btn.gradient{ background:var(--btn-gradient); color:#fff; }
+
+  /* === Converter Explainer (dynamic SEO section) === */
+.converter-explainer{margin:34px auto 18px;max-width:1080px;padding:20px 18px;border:1px solid var(--pane-border);background:var(--pane-bg);border-radius:14px}
+.converter-explainer h2{font-size:26px;margin:0 0 6px;font-weight:800}
+.converter-explainer h3{font-size:18px;margin:10px 0 8px;font-weight:700}
+.converter-explainer p{line-height:1.65;margin:8px 0;color:var(--muted)}
+.converter-explainer ul{margin:8px 0 0 18px}
+.converter-explainer li{margin:6px 0}
+.converter-explainer .subtle{opacity:.85}
+.converter-explainer .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:980px){.converter-explainer .grid-2{grid-template-columns:1fr}}
+.faq details{border:1px solid var(--pane-border);border-radius:10px;padding:10px 12px;margin:10px 0;background:var(--pane-bg)}
+.faq summary{font-weight:700;cursor:pointer}
+
 </style>
 
 
@@ -174,17 +188,16 @@
   <!-- ===== Top Bar / Navbar ===== -->
   <header class="topbar">
     <div class="brand">
-  <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
-    <img src="assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
-  </a>
-</div>
+      <a href="index.html" class="brand-link" aria-label="JSON Studio Lite">
+        <img src="assets/icons/jsl-logo.svg" alt="JSON Studio Lite" class="brand-logo">
+      </a>
+    </div>
     <nav class="tabs" aria-label="Primary">
       <a class="tab" href="view/json-format-viewer.html">View</a>
       <a class="tab active" href="index.html" aria-current="page">Convert</a>
       <a class="tab" href="json-diff-checker.html">Difference</a>
       <a class="tab" href="samples.html">Samples</a>
     </nav>
-
     <div class="actions">
       <button id="themeToggle" class="btn ghost" title="Toggle theme" aria-label="Toggle theme">☾</button>
     </div>
@@ -263,6 +276,9 @@
       <div class="editor-shell"><div id="edOut" class="ace-wrap"></div></div>
     </section>
   </main>
+
+  <!-- ===== Simple Explainer (matches competitor style; no FAQ) ===== -->
+  <section id="explainer" class="converter-explainer" aria-live="polite"></section>
 
   <!-- ===== History Modal ===== -->
   <dialog id="historyModal" class="modal">
@@ -481,6 +497,106 @@ active: true`,
     const exLT    = document.getElementById('exLeftTitle');
     const exRT    = document.getElementById('exRightTitle');
 
+    // ===== Simple Explainer copy per mode (no FAQ) =====
+    const seoContent = {
+      "text-json": {
+        h1: "TEXT to JSON Converter — JSON Studio Lite",
+        intro: "Plain notes, logs ya key–value lines ko turant clean JSON me convert karein. Sab kuch browser ke andar — private & fast.",
+        bullets: [
+          "KV/List/Table ka smart auto-detect",
+          "Stable ordering ke sath pretty/minified JSON",
+          "Copy/Download & local history",
+          "Mock APIs, test payloads, schema drafts"
+        ],
+        useCases: [
+          "Meeting notes → structured objects",
+          "Config snippets → Postman/Insomnia JSON",
+          "DB import se pehle messy text normalize"
+        ]
+      },
+      "csv-json": {
+        h1: "CSV to JSON Converter — JSON Studio Lite",
+        intro: "CSV paste/upload karein aur field-accurate JSON arrays hasil karein — APIs, seed data aur dashboards ke liye best.",
+        bullets: [
+          "Auto/Manual delimiter: comma, tab, pipe, semicolon",
+          "Headers → JSON keys; empty lines trimmed",
+          "One-click Copy/Download; local history"
+        ],
+        useCases: [
+          "Spreadsheet exports → chart JSON",
+          "Unit/integration test fixtures",
+          "Public datasets → sample API responses"
+        ]
+      },
+      "json-text": {
+        h1: "JSON to TEXT Converter — JSON Studio Lite",
+        intro: "Nested JSON ko readable lines me flatten karein (e.g., `user.name = Zara`) for quick human review.",
+        bullets: [
+          "Dotted object paths, indexed array paths",
+          "Stable order for cleaner diffs",
+          "Copy/Download ready output"
+        ],
+        useCases: [
+          "Log payload summaries",
+          "Plain diff tools ke sath compare",
+          "Concise PR/documentation snippets"
+        ]
+      },
+      "json-xml": {
+        h1: "JSON to XML Converter — JSON Studio Lite",
+        intro: "JSON objects/arrays se simple, well-formed XML banayein — legacy integrations aur feeds ke liye.",
+        bullets: [
+          "Arrays → `<item>` nodes",
+          "JSON-like neat nesting",
+          "Quick copy/download"
+        ],
+        useCases: [
+          "SOAP-style test endpoints",
+          "XML-based system demos",
+          "CMS imports jahan XML chahiye"
+        ]
+      },
+      "json-yaml": {
+        h1: "JSON to YAML Converter — JSON Studio Lite",
+        intro: "Clean YAML (2-space indent) generate karein — configs, CI/CD pipelines aur K8s manifests ke liye.",
+        bullets: [
+          "Arrays → dash lists; nested blocks",
+          "Readable indentation; scalars preserved",
+          "Config drafts super fast"
+        ],
+        useCases: [
+          "API responses → Helm/K8s YAML",
+          "GitHub Actions/CI configs",
+          "CLI/app configs human-editable"
+        ]
+      }
+    };
+
+    function renderExplainer(modeKey){
+      const data = seoContent[modeKey];
+      const el = document.getElementById('explainer');
+      if(!data || !el) return;
+
+      const bullets = data.bullets.map(li=>`<li>${li}</li>`).join("");
+      const uses   = data.useCases.map(li=>`<li>${li}</li>`).join("");
+
+      // simple content (no FAQ), same width rhythm as examples
+      el.innerHTML = `
+        <h2 style="text-align:center;margin:0 0 10px;font-weight:800">${data.h1}</h2>
+        <p class="subtle" style="max-width:920px;margin:0 auto 10px">${data.intro}</p>
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <h3>Why developers use this</h3>
+            <ul>${bullets}</ul>
+          </div>
+          <div>
+            <h3>Popular use cases</h3>
+            <ul>${uses}</ul>
+          </div>
+        </div>
+      `;
+    }
+
     function applyExample(key){
       const m = modes[key];
       exTitle.textContent = m.title;
@@ -499,8 +615,12 @@ active: true`,
 
       // show TEXT options only for text-json
       document.getElementById('textOptions').hidden = (key !== 'text-json');
+
+      // render simple explainer under panes
+      renderExplainer(key);
     }
-    // default example
+
+    // default example + explainer
     applyExample("text-json");
 
     // Mode buttons
@@ -516,7 +636,6 @@ active: true`,
     function csvToJson(csv, delimAuto='auto'){
       if (!csv.trim()) return [];
       const lines = csv.replace(/\r\n?/g, '\n').split('\n').filter(l=>l.length);
-      // detect delimiter
       const d = (delimAuto==='auto')
         ? ([',',';','\t','|'].sort((a,b)=>csv.split(b).length - csv.split(a).length)[0])
         : delimAuto;
@@ -567,15 +686,14 @@ active: true`,
       try{
         let out="";
         if (modeKey==="text-json"){
-          // quick heuristics: kv / list / table
           const lines = src.replace(/\r\n?/g,'\n').split('\n').filter(Boolean);
           if (!lines.length) out = "[]";
-          else if (lines.some(l=>l.includes(':'))){ // kv
+          else if (lines.some(l=>l.includes(':'))){
             const obj={}; lines.forEach(l=>{ const m=l.split(':'); if(m[0]) obj[m[0].trim()]= (m.slice(1).join(':')).trim(); });
             out = JSON.stringify(obj, null, 2);
-          } else if (lines[0].includes(',') || lines[0].includes('\t') || lines[0].includes('|') || lines[0].includes(';')){ // table
+          } else if (lines[0].includes(',') || lines[0].includes('\t') || lines[0].includes('|') || lines[0].includes(';')){
             out = JSON.stringify(csvToJson(lines.join('\n')), null, 2);
-          } else { // list
+          } else {
             out = JSON.stringify(lines, null, 2);
           }
         } else if (modeKey==="csv-json"){
